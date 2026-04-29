@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class UsuarioService {
@@ -18,14 +19,21 @@ public class UsuarioService {
         return usuarioRepository.findAll();
     }
 
+    @Transactional(readOnly = true)
+    public Optional<Usuario> buscarPorId(Long id) {
+        return usuarioRepository.findById(id);
+    }
+
     @Transactional
     public Usuario guardar(Usuario usuario) {
-        // Nota: En la HU-3 implementaremos el hash de contraseña. 
-        // Por ahora se guarda en texto plano para cumplir la HU-1.
         return usuarioRepository.save(usuario);
     }
 
     public boolean existeUsername(String username) {
         return usuarioRepository.existsByUsername(username);
+    }
+    
+    public boolean existeEmail(String email) {
+        return usuarioRepository.existsByEmail(email);
     }
 }

@@ -2,7 +2,7 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Crear Usuario - Panameño Garcia</title>
+    <title>Editar Usuario - Panameño Garcia</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body class="bg-light">
@@ -14,16 +14,18 @@
 
     <div class="container">
         <div class="card shadow">
-            <div class="card-header bg-primary text-white">
-                <h3 class="card-title mb-0">Registrar Nuevo Usuario</h3>
+            <div class="card-header bg-warning text-dark">
+                <h3 class="card-title mb-0">Editar Usuario: <span th:text="${usuario.username}"></span></h3>
             </div>
             <div class="card-body">
                 <form th:action="@{/usuarios/guardar}" th:object="${usuario}" method="post">
+                    <input type="hidden" th:field="*{id}">
+                    <input type="hidden" th:field="*{password}"> <!-- Mantenemos password actual por ahora -->
+
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Username</label>
-                            <input type="text" th:field="*{username}" class="form-control" th:errorclass="is-invalid">
-                            <div class="invalid-feedback" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></div>
+                            <input type="text" th:field="*{username}" class="form-control" readonly>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Email</label>
@@ -40,22 +42,23 @@
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Contraseña</label>
-                            <input type="password" th:field="*{password}" class="form-control" th:errorclass="is-invalid">
-                            <div class="invalid-feedback" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
+                            <label class="form-label">Estado</label>
+                            <div class="form-check form-switch mt-2">
+                                <input class="form-check-input" type="checkbox" th:field="*{activo}">
+                                <label class="form-check-label">Usuario Activo</label>
+                            </div>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Roles del Sistema</label>
                             <select th:field="*{roles}" class="form-select" multiple size="4">
                                 <option th:each="rol : ${allRoles}" th:value="${rol.id}" th:text="${rol.nombre}"></option>
                             </select>
-                            <small class="text-muted">Mantén presionado Ctrl (o Cmd) para seleccionar varios.</small>
                         </div>
                     </div>
 
                     <div class="d-flex justify-content-end gap-2 mt-3">
-                        <a th:href="@{/usuarios}" class="btn btn-secondary">Cancelar</a>
-                        <button type="submit" class="btn btn-success">Guardar Usuario</button>
+                        <a th:href="@{/usuarios}" class="btn btn-secondary">Volver</a>
+                        <button type="submit" class="btn btn-primary">Actualizar Cambios</button>
                     </div>
                 </form>
             </div>
