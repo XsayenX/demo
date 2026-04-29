@@ -17,6 +17,16 @@
 		<java.version>17</java.version>
 	</properties>
 	<dependencies>
+		<!-- Buscar la sección <dependencies> y añadir esta dentro -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+		<!-- Para usar utilidades de seguridad en plantillas Thymeleaf -->
+		<dependency>
+			<groupId>org.thymeleaf.extras</groupId>
+			<artifactId>thymeleaf-extras-springsecurity6</artifactId>
+		</dependency>
 		<!-- Web y UI -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
