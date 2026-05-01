@@ -13,7 +13,7 @@ import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity // Habilita seguridad a nivel de método si fuera necesario
+@EnableMethodSecurity
 public class SecurityConfig {
 
     @Bean
@@ -25,22 +25,24 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/css/**", "/js/**", "/img/**").permitAll()
-                // Restricción de Roles: Solo ADMIN puede gestionar usuarios
+                .requestMatchers("/css/**", "/js/**", "/img/**", "/webjars/**").permitAll()
+                .requestMatchers("/").authenticated()
                 .requestMatchers("/usuarios/**").hasRole("ADMINISTRADOR")
+                .requestMatchers("/trabajadores/**").hasAnyRole("ADMINISTRADOR", "SUPERVISOR")
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form
                 .loginPage("/login")
-                .defaultSuccessUrl("/usuarios", true) // Cambiaremos esto a un dashboard en el futuro
+                .defaultSuccessUrl("/", true)
                 .permitAll()
             )
             .logout(logout -> logout
                 .logoutSuccessUrl("/login?logout")
+                .deleteCookies("JSESSIONID")
                 .permitAll()
             )
             .exceptionHandling(ex -> ex
-                .accessDeniedPage("/error/403") // Página para cuando un usuario no tiene permiso
+                .accessDeniedPage("/error/403")
             );
 
         return http.build();

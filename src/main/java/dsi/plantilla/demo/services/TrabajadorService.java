@@ -1,0 +1,42 @@
+package dsi.plantilla.demo.services;
+
+import dsi.plantilla.demo.models.Trabajador;
+import dsi.plantilla.demo.repositories.TrabajadorRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Optional;
+
+@Service
+public class TrabajadorService {
+
+    @Autowired
+    private TrabajadorRepository trabajadorRepository;
+
+    @Transactional(readOnly = true)
+    public List<Trabajador> listarTodos() {
+        return trabajadorRepository.findAll();
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<Trabajador> buscarPorId(Long id) {
+        return trabajadorRepository.findById(id);
+    }
+
+    @Transactional
+    public Trabajador guardar(Trabajador trabajador) {
+        return trabajadorRepository.save(trabajador);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean existeDui(String dui) {
+        return trabajadorRepository.existsByDui(dui);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean existeNss(String nss) {
+        return trabajadorRepository.existsByNss(nss);
+    }
+}
