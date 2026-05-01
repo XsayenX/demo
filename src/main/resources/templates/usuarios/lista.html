@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
     <title>Lista de Usuarios - Panameño Garcia</title>
@@ -11,7 +11,8 @@
             <a class="navbar-brand" href="/usuarios">Constructora Panameño Garcia</a>
             <div class="navbar-nav ms-auto">
                 <span class="nav-item nav-link text-light me-3">
-                    Hola, <strong th:text="${#authentication.name}">Usuario</strong>
+                    Hola, <strong th:text="${#authentication.name}">Usuario</strong> 
+                    (<span sec:authentication="principal.authorities">Roles</span>)
                 </span>
                 <form th:action="@{/logout}" method="post">
                     <button type="submit" class="btn btn-outline-danger btn-sm">Cerrar Sesión</button>
@@ -25,15 +26,12 @@
             <span th:text="${success}"></span>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
-        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
-            <span th:text="${error}"></span>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
 
         <div class="card shadow">
             <div class="card-header bg-white d-flex justify-content-between align-items-center">
                 <h3 class="mb-0">Gestión de Usuarios</h3>
-                <a th:href="@{/usuarios/nuevo}" class="btn btn-primary">Registrar Usuario</a>
+                <!-- Solo Admin puede ver el botón de registrar -->
+                <a sec:authorize="hasRole('ADMINISTRADOR')" th:href="@{/usuarios/nuevo}" class="btn btn-primary">Registrar Usuario</a>
             </div>
             <div class="card-body">
                 <table class="table table-hover align-middle">
@@ -44,7 +42,8 @@
                             <th>Email</th>
                             <th>Roles</th>
                             <th>Estado</th>
-                            <th>Acciones</th>
+                            <!-- Solo Admin puede ver la columna de acciones -->
+                            <th sec:authorize="hasRole('ADMINISTRADOR')">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -59,12 +58,9 @@
                                 <span th:if="${u.activo}" class="badge bg-success">Activo</span>
                                 <span th:unless="${u.activo}" class="badge bg-danger">Inactivo</span>
                             </td>
-                            <td>
+                            <td sec:authorize="hasRole('ADMINISTRADOR')">
                                 <a th:href="@{/usuarios/editar/{id}(id=${u.id})}" class="btn btn-sm btn-outline-warning">Editar</a>
                             </td>
-                        </tr>
-                        <tr th:if="${#lists.isEmpty(usuarios)}">
-                            <td colspan="6" class="text-center py-4 text-muted">No hay usuarios registrados.</td>
                         </tr>
                     </tbody>
                 </table>
