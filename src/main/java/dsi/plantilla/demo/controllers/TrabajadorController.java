@@ -20,8 +20,9 @@ public class TrabajadorController {
     private TrabajadorService trabajadorService;
 
     @GetMapping
-    public String listar(Model model) {
-        model.addAttribute("trabajadores", trabajadorService.listarTodos());
+    public String listar(@RequestParam(name = "q", required = false) String q, Model model) {
+        model.addAttribute("trabajadores", trabajadorService.buscar(q));
+        model.addAttribute("q", q); // Mantener el término en el input
         return "trabajadores/lista";
     }
 
@@ -48,7 +49,6 @@ public class TrabajadorController {
             return trabajador.getId() == null ? "trabajadores/crear" : "trabajadores/editar";
         }
 
-        // Validación de duplicados solo para registros nuevos
         if (trabajador.getId() == null) {
             if (trabajadorService.existeDui(trabajador.getDui())) {
                 flash.addFlashAttribute("error", "Error: El DUI ingresado ya pertenece a otro trabajador.");

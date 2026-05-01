@@ -3,64 +3,92 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Personal - Panameño Garcia</title>
+    <title>Consulta de Personal - Panameño Garcia</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 </head>
 <body class="bg-light">
-    <nav class="navbar navbar-dark bg-dark mb-4 shadow">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 shadow">
         <div class="container">
-            <a class="navbar-brand fw-bold" href="/">Panameño Garcia</a>
+            <a class="navbar-brand fw-bold" href="/">
+                <i class="bi bi-building"></i> Panameño Garcia
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a href="/" class="btn btn-outline-light btn-sm me-2">Volver al Inicio</a>
+            </div>
         </div>
     </nav>
 
     <div class="container">
-        <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <!-- Notificaciones -->
+        <div th:if="${success}" class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
             <i class="bi bi-check-circle-fill me-2"></i> <span th:text="${success}"></span>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i> <span th:text="${error}"></span>
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
 
         <div class="card shadow border-0">
-            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                <h3 class="mb-0 fw-bold"><i class="bi bi-people"></i> Listado de Personal</h3>
-                <a th:href="@{/trabajadores/nuevo}" class="btn btn-success rounded-pill">
-                    <i class="bi bi-plus-lg"></i> Registrar Nuevo
-                </a>
+            <div class="card-header bg-white py-3">
+                <div class="row align-items-center">
+                    <div class="col-md-4">
+                        <h3 class="mb-0 fw-bold"><i class="bi bi-person-lines-fill"></i> Consulta de Personal</h3>
+                    </div>
+                    <div class="col-md-5">
+                        <!-- Buscador funcional -->
+                        <form th:action="@{/trabajadores}" method="get" class="d-flex">
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span>
+                                <input type="text" name="q" th:value="${q}" class="form-control border-start-0 ps-0" placeholder="Buscar por nombre o DUI...">
+                                <button class="btn btn-primary px-3" type="submit">Buscar</button>
+                                <a th:if="${q != null}" th:href="@{/trabajadores}" class="btn btn-outline-secondary" title="Limpiar"><i class="bi bi-x-lg"></i></a>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="col-md-3 text-end">
+                        <a th:href="@{/trabajadores/nuevo}" class="btn btn-success rounded-pill px-4">
+                            <i class="bi bi-plus-lg"></i> Nuevo Registro
+                        </a>
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
+            <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle">
+                    <table class="table table-hover align-middle mb-0">
                         <thead class="table-light">
                             <tr>
-                                <th>Nombre</th>
+                                <th class="ps-4">Nombre del Trabajador</th>
                                 <th>DUI</th>
-                                <th>Puesto</th>
+                                <th>NSS</th>
+                                <th>Puesto / Cargo</th>
                                 <th>Estado</th>
-                                <th class="text-center">Acciones</th>
+                                <th class="text-center pe-4">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr th:each="t : ${trabajadores}">
-                                <td th:text="${t.nombre}" class="fw-bold"></td>
+                                <td class="ps-4">
+                                    <div class="fw-bold" th:text="${t.nombre}"></div>
+                                    <small class="text-muted" th:text="'Ingreso: ' + ${t.fechaIngreso}"></small>
+                                </td>
                                 <td th:text="${t.dui}"></td>
+                                <td th:text="${t.nss}"></td>
                                 <td th:text="${t.puesto}"></td>
                                 <td>
-                                    <span th:if="${t.activo}" class="badge bg-success">Activo</span>
-                                    <span th:unless="${t.activo}" class="badge bg-danger">Inactivo</span>
+                                    <span th:if="${t.activo}" class="badge rounded-pill bg-success-subtle text-success border border-success">Activo</span>
+                                    <span th:unless="${t.activo}" class="badge rounded-pill bg-danger-subtle text-danger border border-danger">Inactivo</span>
                                 </td>
-                                <td class="text-center">
-                                    <a th:href="@{/trabajadores/editar/{id}(id=${t.id})}" class="btn btn-sm btn-outline-primary">
-                                        <i class="bi bi-pencil"></i> Editar
+                                <td class="text-center pe-4">
+                                    <a th:href="@{/trabajadores/editar/{id}(id=${t.id})}" class="btn btn-sm btn-outline-primary shadow-sm">
+                                        <i class="bi bi-pencil-square"></i> Editar
                                     </a>
                                 </td>
                             </tr>
                             <tr th:if="${#lists.isEmpty(trabajadores)}">
-                                <td colspan="5" class="text-center py-5 text-muted">
-                                    No hay trabajadores registrados en el sistema.
+                                <td colspan="6" class="text-center py-5">
+                                    <div class="text-muted">
+                                        <i class="bi bi-search display-4"></i>
+                                        <p class="mt-2">No se encontraron trabajadores que coincidan con la búsqueda.</p>
+                                        <a th:href="@{/trabajadores}" class="btn btn-link">Ver todos los registros</a>
+                                    </div>
                                 </td>
                             </tr>
                         </tbody>

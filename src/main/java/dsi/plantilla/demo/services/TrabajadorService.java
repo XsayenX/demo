@@ -21,6 +21,14 @@ public class TrabajadorService {
     }
 
     @Transactional(readOnly = true)
+    public List<Trabajador> buscar(String termino) {
+        if (termino != null && !termino.isEmpty()) {
+            return trabajadorRepository.buscarPorNombreODui(termino);
+        }
+        return trabajadorRepository.findAll();
+    }
+
+    @Transactional(readOnly = true)
     public Optional<Trabajador> buscarPorId(Long id) {
         return trabajadorRepository.findById(id);
     }
