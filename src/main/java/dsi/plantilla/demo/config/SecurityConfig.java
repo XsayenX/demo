@@ -29,6 +29,8 @@ public class SecurityConfig {
                 .requestMatchers("/").authenticated()
                 .requestMatchers("/usuarios/**").hasRole("ADMINISTRADOR")
                 .requestMatchers("/trabajadores/**").hasAnyRole("ADMINISTRADOR", "SUPERVISOR")
+                // Nueva regla: Supervisor registra horas, Contadora consulta
+                .requestMatchers("/asistencias/**").hasAnyRole("ADMINISTRADOR", "SUPERVISOR", "CONTADORA")
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form
