@@ -2,64 +2,48 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registrar Asistencia - Panameño Garcia</title>
+    <title>Reportar Jornada - Panameño Garcia</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 </head>
 <body class="bg-light">
-    <nav class="navbar navbar-dark bg-dark mb-4 shadow">
-        <div class="container">
-            <a class="navbar-brand fw-bold" href="/">Panameño Garcia</a>
-        </div>
-    </nav>
-
-    <div class="container">
+    <div class="container mt-5">
         <div class="row justify-content-center">
-            <div class="col-lg-6">
+            <div class="col-md-6">
                 <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
-
-                <div class="card shadow border-0">
-                    <div class="card-header bg-primary py-3">
-                        <h4 class="mb-0 text-white fw-bold"><i class="bi bi-clock-history"></i> Reportar Jornada Diaria</h4>
+                
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">Registrar Asistencia</h4>
                     </div>
-                    <div class="card-body p-4">
+                    <div class="card-body">
                         <form th:action="@{/asistencias/guardar}" th:object="${asistencia}" method="post">
-                            
-                            <div class="mb-4">
-                                <label class="form-label fw-bold">Trabajador</label>
-                                <select th:field="*{trabajador}" class="form-select" th:errorclass="is-invalid" required>
-                                    <option value="">-- Seleccione Trabajador --</option>
+                            <div class="mb-3">
+                                <label class="form-label">Trabajador</label>
+                                <!-- Cambiado de *{trabajador} a *{trabajador.id} para asegurar el mapeo -->
+                                <select th:field="*{trabajador.id}" class="form-select" required>
+                                    <option value="">-- Seleccione --</option>
                                     <option th:each="t : ${trabajadores}" 
                                             th:value="${t.id}" 
-                                            th:text="${t.nombre} + ' (' + ${t.dui} + ')'"></option>
+                                            th:text="${t.nombre}"></option>
                                 </select>
-                                <div class="invalid-feedback" th:errors="*{trabajador}"></div>
                             </div>
-
-                            <div class="mb-4">
-                                <label class="form-label fw-bold">Fecha de Jornada</label>
-                                <input type="date" th:field="*{fecha}" class="form-control" th:errorclass="is-invalid" required>
-                                <div class="invalid-feedback" th:errors="*{fecha}"></div>
+                            <div class="mb-3">
+                                <label class="form-label">Fecha</label>
+                                <input type="date" th:field="*{fecha}" class="form-control" required>
                             </div>
-
                             <div class="row">
-                                <div class="col-md-6 mb-4">
-                                    <label class="form-label fw-bold">Entrada</label>
-                                    <input type="time" th:field="*{horaEntrada}" class="form-control" th:errorclass="is-invalid" required>
-                                    <div class="invalid-feedback" th:errors="*{horaEntrada}"></div>
+                                <div class="col">
+                                    <label class="form-label">Entrada</label>
+                                    <input type="time" th:field="*{horaEntrada}" class="form-control" required>
                                 </div>
-                                <div class="col-md-6 mb-4">
-                                    <label class="form-label fw-bold">Salida</label>
-                                    <input type="time" th:field="*{horaSalida}" class="form-control" th:errorclass="is-invalid" required>
-                                    <div class="invalid-feedback" th:errors="*{horaSalida}"></div>
+                                <div class="col">
+                                    <label class="form-label">Salida</label>
+                                    <input type="time" th:field="*{horaSalida}" class="form-control" required>
                                 </div>
                             </div>
-
-                            <hr>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <a href="/asistencias" class="btn btn-outline-secondary">Ver listado</a>
-                                <button type="submit" class="btn btn-primary px-4">Guardar Registro</button>
+                            <div class="mt-4 text-end">
+                                <a href="/asistencias" class="btn btn-secondary">Cancelar</a>
+                                <button type="submit" class="btn btn-primary">Guardar Registro</button>
                             </div>
                         </form>
                     </div>

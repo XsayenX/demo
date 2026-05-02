@@ -7,6 +7,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 
 @Entity
 @Table(name = "asistencias")
@@ -18,7 +19,7 @@ public class Asistencia {
     private Long id;
 
     @NotNull(message = "Debe seleccionar un trabajador")
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "trabajador_id")
     private Trabajador trabajador;
 
@@ -36,13 +37,22 @@ public class Asistencia {
 
     private Double horasTotales;
 
-    // Método para calcular horas antes de persistir
+    // Relación con Horas Extra - EAGER para evitar errores en la sumatoria de la vista
+    @OneToMany(mappedBy = "asistencia", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    private List<HoraExtra> horasExtras;
+
     @PrePersist
     @PreUpdate
     public void calcularHoras() {
         if (horaEntrada != null && horaSalida != null) {
             long minutos = java.time.Duration.between(horaEntrada, horaSalida).toMinutes();
-            this.horasTotales = minutos / 60.0;
+            this.horasTotales = Math.max(0, minutos / 60.0);
         }
+    }
+    
+    // Método para sumar las extras de este día específico
+    public Double getTotalHorasExtra() {
+        if (horasExtras == null || horasExtras.isEmpty()) return 0.0;
+        return horasExtras.stream().mapToDouble(HoraExtra::getCantidad).sum();
     }
 }

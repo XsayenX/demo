@@ -19,6 +19,11 @@ public class AsistenciaService {
         return asistenciaRepository.findAll();
     }
 
+    @Transactional(readOnly = true)
+    public List<Asistencia> historialPorTrabajador(Long trabajadorId) {
+        return asistenciaRepository.findByTrabajadorIdOrderByFechaDesc(trabajadorId);
+    }
+
     @Transactional
     public Asistencia guardar(Asistencia asistencia) {
         return asistenciaRepository.save(asistencia);

@@ -15,4 +15,8 @@ public interface TrabajadorRepository extends JpaRepository<Trabajador, Long> {
            "LOWER(t.nombre) LIKE LOWER(CONCAT('%', :term, '%')) OR " +
            "t.dui LIKE CONCAT('%', :term, '%')")
     List<Trabajador> buscarPorNombreODui(@Param("term") String term);
+
+    // NUEVA CONSULTA: Obtiene trabajadores que tienen registros en la tabla asistencias
+    @Query("SELECT DISTINCT t FROM Trabajador t JOIN Asistencia a ON a.trabajador.id = t.id")
+    List<Trabajador> findTrabajadoresConAsistencia();
 }
