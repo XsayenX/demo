@@ -7,14 +7,18 @@ import dsi.plantilla.demo.services.AsistenciaService;
 import dsi.plantilla.demo.services.TrabajadorService;
 import dsi.plantilla.demo.repositories.TrabajadorRepository;
 import dsi.plantilla.demo.repositories.HoraExtraRepository;
+import dsi.plantilla.demo.repositories.AsistenciaRepository;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.time.LocalDateTime;
 import java.time.format.TextStyle;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -25,20 +29,18 @@ public class AsistenciaController {
 
     @Autowired
     private AsistenciaService asistenciaService;
-
     @Autowired
     private TrabajadorService trabajadorService;
-
     @Autowired
     private TrabajadorRepository trabajadorRepository;
-
     @Autowired
     private HoraExtraRepository horaExtraRepository;
+    @Autowired
+    private AsistenciaRepository asistenciaRepository;
 
     @GetMapping
     public String listar(Model model) {
-        List<Trabajador> trabajadores = trabajadorRepository.findTrabajadoresConAsistencia();
-        model.addAttribute("trabajadores", trabajadores);
+        model.addAttribute("trabajadores", trabajadorRepository.findTrabajadoresConAsistencia());
         return "asistencias/lista";
     }
 
@@ -52,46 +54,57 @@ public class AsistenciaController {
 
         List<Asistencia> historial = asistenciaService.historialPorTrabajador(id);
         
-        // Agrupar jornadas por Mes y Año
         Map<String, List<Asistencia>> jornadasAgrupadas = historial.stream()
                 .collect(Collectors.groupingBy(
                         a -> a.getFecha().getMonth().getDisplayName(TextStyle.FULL, new Locale("es", "ES")).toUpperCase() 
                              + " " + a.getFecha().getYear(),
-                        LinkedHashMap::new, 
-                        Collectors.toList()
+                        LinkedHashMap::new, Collectors.toList()
                 ));
 
-        // Calcular total global (Horas Base)
-        Double totalHorasGlobal = historial.stream()
-                .mapToDouble(a -> a.getHorasTotales() != null ? a.getHorasTotales() : 0.0)
-                .sum();
+        Double totalBase = historial.stream().mapToDouble(Asistencia::getHorasBaseSiAprobado).sum();
+        Double totalDiurna = historial.stream().mapToDouble(Asistencia::getHorasDiurnasAprobadas).sum();
+        Double totalNocturna = historial.stream().mapToDouble(Asistencia::getHorasNocturnasAprobadas).sum();
 
         model.addAttribute("trabajador", trabajadorOpt.get());
         model.addAttribute("jornadasPorMes", jornadasAgrupadas);
-        model.addAttribute("totalHorasGlobal", String.format("%.2f", totalHorasGlobal));
-        
-        // Objeto vacío para el modal de horas extra
-        model.addAttribute("nuevaHoraExtra", new HoraExtra());
+        model.addAttribute("totalBaseGlobal", String.format("%.2f", totalBase));
+        model.addAttribute("totalDiurnaGlobal", String.format("%.2f", totalDiurna));
+        model.addAttribute("totalNocturnaGlobal", String.format("%.2f", totalNocturna));
         
         return "asistencias/detalle";
     }
 
-    @PostMapping("/horas-extra/guardar")
-    public String guardarHoraExtra(@ModelAttribute HoraExtra horaExtra, RedirectAttributes flash) {
-        if (horaExtra.getAsistencia() == null || horaExtra.getCantidad() == null || horaExtra.getCantidad() <= 0) {
-            flash.addFlashAttribute("error", "Datos de horas extra inválidos.");
-            return "redirect:/asistencias";
+    @PostMapping("/revisar")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'JEFE')") // Admin puede aprobar
+    public String revisarAsistencia(@RequestParam Long id, @RequestParam String accion, 
+                                   @RequestParam(required = false) String observaciones,
+                                   Authentication auth, RedirectAttributes flash) {
+        Asistencia asistencia = asistenciaRepository.findById(id).orElse(null);
+        if (asistencia != null) {
+            asistencia.setEstado(accion.equals("APROBAR") ? "APROBADO" : "RECHAZADO");
+            asistencia.setObservacionesJefe(observaciones);
+            asistencia.setFechaRevision(LocalDateTime.now());
+            asistencia.setRevisadoPor(auth.getName());
+            asistenciaRepository.save(asistencia);
+            flash.addFlashAttribute("success", "Estado actualizado correctamente por " + auth.getName());
         }
+        return "redirect:/asistencias/detalle/" + (asistencia != null ? asistencia.getTrabajador().getId() : "");
+    }
+
+    @PostMapping("/horas-extra/guardar")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'SUPERVISOR')") // Admin puede registrar extras
+    public String guardarHoraExtra(@ModelAttribute HoraExtra horaExtra, RedirectAttributes flash) {
+        Asistencia asis = asistenciaRepository.findById(horaExtra.getAsistencia().getId()).orElse(null);
         
-        horaExtraRepository.save(horaExtra);
-        flash.addFlashAttribute("success", "Horas extra registradas correctamente.");
-        
-        // Recuperar trabajador para volver al detalle
-        Asistencia asis = asistenciaService.listarTodas().stream()
-                .filter(a -> a.getId().equals(horaExtra.getAsistencia().getId()))
-                .findFirst().orElse(null);
-                
-        return "redirect:/asistencias/detalle/" + asis.getTrabajador().getId();
+        // El admin puede saltarse el bloqueo de PENDIENTE si lo desea, 
+        // pero por regla de integridad lo mantenemos solo para Pendientes para todos.
+        if (asis != null && "PENDIENTE".equals(asis.getEstado())) {
+            horaExtraRepository.save(horaExtra);
+            flash.addFlashAttribute("success", "Horas extra registradas.");
+        } else {
+            flash.addFlashAttribute("error", "No se puede modificar un registro que ya no está pendiente.");
+        }
+        return "redirect:/asistencias/detalle/" + (asis != null ? asis.getTrabajador().getId() : "");
     }
 
     @GetMapping("/registrar")
@@ -102,24 +115,12 @@ public class AsistenciaController {
     }
 
     @PostMapping("/guardar")
-    public String guardar(@Valid @ModelAttribute("asistencia") Asistencia asistencia, 
-                          BindingResult result, 
-                          Model model, 
-                          RedirectAttributes flash) {
-        
+    public String guardar(@Valid @ModelAttribute("asistencia") Asistencia asistencia, BindingResult result, Model model, RedirectAttributes flash) {
         if (result.hasErrors()) {
             model.addAttribute("trabajadores", trabajadorService.listarTodos());
             return "asistencias/registrar";
         }
-
-        if (asistenciaService.yaRegistroAsistencia(asistencia)) {
-            model.addAttribute("trabajadores", trabajadorService.listarTodos());
-            model.addAttribute("error", "Error: Ya existe un registro para este trabajador en la fecha seleccionada.");
-            return "asistencias/registrar";
-        }
-
         asistenciaService.guardar(asistencia);
-        flash.addFlashAttribute("success", "Jornada registrada con éxito.");
         return "redirect:/asistencias/detalle/" + asistencia.getTrabajador().getId();
     }
 }
