@@ -4,45 +4,46 @@
 <body>
     <aside th:replace="~{fragments/layout :: sidebar('asistencias')}"></aside>
     <div id="main-content">
-        <header th:replace="~{fragments/layout :: topbar('Control de Asistencias')}"></header>
+        <header th:replace="~{fragments/layout :: topbar('Control de Jornadas')}"></header>
         <main class="content-body">
-            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-                <div class="card-header bg-white py-4 px-4 d-flex justify-content-between align-items-center border-0">
-                    <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-journal-check me-2 text-primary"></i>Registros por Trabajador</h5>
-                    <a th:href="@{/asistencias/registrar}" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">
-                        <i class="bi bi-plus-lg me-2"></i>Reportar Jornada
-                    </a>
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th class="ps-4 py-3">Nombre Completo</th>
-                                    <th>DUI</th>
-                                    <th>Cargo / Puesto</th>
-                                    <th class="text-center pe-4">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr th:each="t : ${trabajadores}">
-                                    <td class="ps-4 py-3 fw-bold text-dark">
-                                        <i class="bi bi-person-circle text-primary me-2"></i><span th:text="${t.nombre}"></span>
-                                    </td>
-                                    <td th:text="${t.dui}" class="font-monospace text-muted"></td>
-                                    <td th:text="${t.puesto}"></td>
-                                    <td class="text-center pe-4">
-                                        <a th:href="@{/asistencias/detalle/{id}(id=${t.id})}" class="btn btn-sm btn-info text-white px-4 rounded-pill fw-bold shadow-sm">Ver Historial</a>
-                                    </td>
-                                </tr>
-                                <tr th:if="${#lists.isEmpty(trabajadores)}">
-                                    <td colspan="4" class="text-center py-5 text-muted">
-                                        <i class="bi bi-info-circle fs-2 d-block mb-2"></i>
-                                        No se han registrado jornadas de trabajo aún.
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="fw-bold">Reportes Diarios</h4>
+                <a href="/asistencias/nueva" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">
+                    <i class="bi bi-plus-lg me-2"></i>Reportar Día
+                </a>
+            </div>
+
+            <div class="accordion border-0 shadow-sm" id="accAsis">
+                <div th:each="entry, iter : ${asistenciasPorDia}" class="accordion-item border-0 mb-2 rounded-4 overflow-hidden shadow-sm">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed py-3 px-4" type="button" data-bs-toggle="collapse" th:data-bs-target="'#collapse'+${iter.index}">
+                            <div class="d-flex justify-content-between w-100 align-items-center me-3">
+                                <div><i class="bi bi-calendar3 me-2 text-primary"></i> <span class="fw-bold text-dark" th:text="${#temporals.format(entry.key, 'EEEE dd/MM/yyyy')}"></span></div>
+                                <div class="text-end">
+                                    <span class="badge bg-success-subtle text-success border border-success me-2" th:text="${entry.value.size()} + ' Registrados'"></span>
+                                    <span th:if="${totalActivos - entry.value.size() > 0}" class="badge bg-warning-subtle text-warning border border-warning" th:text="${totalActivos - entry.value.size()} + ' Pendientes'"></span>
+                                    <span th:if="${totalActivos == entry.value.size()}" class="badge bg-success rounded-pill px-3"><i class="bi bi-check-all me-1"></i> Completado</span>
+                                </div>
+                            </div>
+                        </button>
+                    </h2>
+                    <div th:id="'collapse'+${iter.index}" class="accordion-collapse collapse" data-bs-parent="#accAsis">
+                        <div class="accordion-body p-0 bg-white">
+                            <table class="table table-hover align-middle mb-0 small">
+                                <thead class="table-light"><tr><th class="ps-4">Trabajador</th><th>Entrada</th><th>Salida</th><th>Estado</th><th class="text-end pe-4">Acción</th></tr></thead>
+                                <tbody>
+                                    <tr th:each="a : ${entry.value}">
+                                        <td class="ps-4 fw-bold" th:text="${a.trabajador.nombre}"></td>
+                                        <td th:text="${a.horaEntrada}"></td><td th:text="${a.horaSalida}"></td>
+                                        <td><span th:text="${a.estado}" class="badge" th:classappend="${a.estado == 'APROBADO' ? 'bg-success' : 'bg-warning'}"></span></td>
+                                        <td class="text-end pe-4"><a th:href="@{/asistencias/detalle/{id}(id=${a.trabajador.id})}" class="btn btn-sm btn-link">Ver ficha</a></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div class="p-3 bg-light text-center border-top">
+                                <a th:href="@{/asistencias/diaria(fecha=${entry.key})}" class="btn btn-sm btn-dark rounded-pill px-4">Completar este día <i class="bi bi-pencil-square ms-1"></i></a>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

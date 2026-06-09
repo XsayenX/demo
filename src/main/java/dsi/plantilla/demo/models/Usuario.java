@@ -21,8 +21,8 @@ public class Usuario {
     @Column(unique = true, nullable = false)
     private String username;
 
-    @NotBlank(message = "La contraseña es obligatoria")
-    @Size(min = 6)
+    // Se quita @NotBlank para permitir ediciones sin cambiar la contraseña. 
+    // La validación en la creación se hará en el controlador/servicio.
     private String password;
 
     @NotBlank(message = "El email es obligatorio")

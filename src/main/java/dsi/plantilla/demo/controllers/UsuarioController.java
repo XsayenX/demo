@@ -1,7 +1,6 @@
 package dsi.plantilla.demo.controllers;
 
 import dsi.plantilla.demo.models.Usuario;
-import dsi.plantilla.demo.models.Rol;
 import dsi.plantilla.demo.services.UsuarioService;
 import dsi.plantilla.demo.services.RolService;
 import jakarta.validation.Valid;
@@ -11,9 +10,6 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
-import java.util.List;
-import java.util.Optional;
 
 @Controller
 @RequestMapping("/usuarios")
@@ -25,47 +21,38 @@ public class UsuarioController {
     @Autowired
     private RolService rolService;
 
-    @GetMapping({"/", ""})
-    public String listar(Model model) {
-        model.addAttribute("usuarios", usuarioService.listarTodos());
+    // ACTUALIZADO: Recibe el parámetro "q"
+    @GetMapping
+    public String listar(@RequestParam(name = "q", required = false) String q, Model model) {
+        model.addAttribute("usuarios", usuarioService.buscar(q));
+        model.addAttribute("q", q);
+        model.addAttribute("nuevoUsuario", new Usuario());
+        model.addAttribute("allRoles", rolService.listarTodos());
         return "usuarios/lista";
     }
 
-    @GetMapping("/nuevo")
-    public String mostrarFormulario(Model model) {
-        model.addAttribute("usuario", new Usuario());
-        model.addAttribute("allRoles", rolService.listarTodos());
-        return "usuarios/crear";
-    }
-
-    @GetMapping("/editar/{id}")
-    public String editar(@PathVariable Long id, Model model, RedirectAttributes flash) {
-        Optional<Usuario> usuario = usuarioService.buscarPorId(id);
-        if (usuario.isEmpty()) {
-            flash.addFlashAttribute("error", "El usuario no existe");
+    @PostMapping("/guardar")
+    public String guardar(@Valid @ModelAttribute Usuario usuario, BindingResult result, RedirectAttributes flash) {
+        if (result.hasErrors()) {
+            flash.addFlashAttribute("error", result.getAllErrors().get(0).getDefaultMessage());
             return "redirect:/usuarios";
         }
-        model.addAttribute("usuario", usuario.get());
-        model.addAttribute("allRoles", rolService.listarTodos());
-        return "usuarios/editar";
-    }
-
-    @PostMapping("/guardar")
-    public String guardar(@Valid @ModelAttribute Usuario usuario, BindingResult result, Model model, RedirectAttributes flash) {
-        if (result.hasErrors()) {
-            model.addAttribute("allRoles", rolService.listarTodos());
-            return usuario.getId() == null ? "usuarios/crear" : "usuarios/editar";
+        if (usuario.getId() == null && (usuario.getPassword() == null || usuario.getPassword().trim().length() < 6)) {
+            flash.addFlashAttribute("error", "Para un nuevo usuario, la contraseña es obligatoria (mín. 6 caracteres).");
+            return "redirect:/usuarios";
         }
-
-        // Validación lógica para nuevo usuario
-        if (usuario.getId() == null && usuarioService.existeUsername(usuario.getUsername())) {
-            flash.addFlashAttribute("error", "El nombre de usuario ya existe");
-            model.addAttribute("allRoles", rolService.listarTodos());
-            return "redirect:/usuarios/nuevo";
+        if (usuario.getId() == null) {
+            if (usuarioService.existeUsername(usuario.getUsername())) {
+                flash.addFlashAttribute("error", "Error: El nombre de usuario ya está en uso.");
+                return "redirect:/usuarios";
+            }
+            if (usuarioService.existeEmail(usuario.getEmail())) {
+                flash.addFlashAttribute("error", "Error: El correo electrónico ya está registrado.");
+                return "redirect:/usuarios";
+            }
         }
-
         usuarioService.guardar(usuario);
-        flash.addFlashAttribute("success", "Usuario procesado con éxito");
+        flash.addFlashAttribute("success", "Usuario guardado correctamente.");
         return "redirect:/usuarios";
     }
 }

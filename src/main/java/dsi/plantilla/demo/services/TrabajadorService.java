@@ -5,46 +5,38 @@ import dsi.plantilla.demo.repositories.TrabajadorRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.util.List;
 import java.util.Optional;
 
 @Service
 public class TrabajadorService {
-
-    @Autowired
-    private TrabajadorRepository trabajadorRepository;
+    @Autowired private TrabajadorRepository trabajadorRepository;
 
     @Transactional(readOnly = true)
-    public List<Trabajador> listarTodos() {
-        return trabajadorRepository.findAll();
-    }
+    public List<Trabajador> listarTodos() { return trabajadorRepository.findAll(); }
 
     @Transactional(readOnly = true)
     public List<Trabajador> buscar(String termino) {
-        if (termino != null && !termino.isEmpty()) {
-            return trabajadorRepository.buscarPorNombreODui(termino);
-        }
+        if (termino != null && !termino.isEmpty()) return trabajadorRepository.buscarPorNombreODui(termino);
         return trabajadorRepository.findAll();
     }
 
     @Transactional(readOnly = true)
-    public Optional<Trabajador> buscarPorId(Long id) {
-        return trabajadorRepository.findById(id);
-    }
+    public Optional<Trabajador> buscarPorId(Long id) { return trabajadorRepository.findById(id); }
 
     @Transactional
     public Trabajador guardar(Trabajador trabajador) {
+        if (trabajador.getId() != null) {
+            Trabajador exist = trabajadorRepository.findById(trabajador.getId()).get();
+            exist.setNombre(trabajador.getNombre());
+            exist.setNss(trabajador.getNss());
+            exist.setPuesto(trabajador.getPuesto());
+            exist.setActivo(trabajador.isActivo());
+            exist.setFechaIngreso(trabajador.getFechaIngreso());
+            return trabajadorRepository.save(exist);
+        }
         return trabajadorRepository.save(trabajador);
     }
 
-    @Transactional(readOnly = true)
-    public boolean existeDui(String dui) {
-        return trabajadorRepository.existsByDui(dui);
-    }
-
-    @Transactional(readOnly = true)
-    public boolean existeNss(String nss) {
-        return trabajadorRepository.existsByNss(nss);
-    }
+    public boolean existeDui(String dui) { return trabajadorRepository.existsByDui(dui); }
 }

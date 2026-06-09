@@ -23,6 +23,15 @@ public class UsuarioService {
         return usuarioRepository.findAll();
     }
 
+    // NUEVO: Método para buscar usuarios
+    @Transactional(readOnly = true)
+    public List<Usuario> buscar(String termino) {
+        if (termino != null && !termino.isEmpty()) {
+            return usuarioRepository.buscarPorTermino(termino);
+        }
+        return usuarioRepository.findAll();
+    }
+
     @Transactional(readOnly = true)
     public Optional<Usuario> buscarPorId(Long id) {
         return usuarioRepository.findById(id);
@@ -30,19 +39,27 @@ public class UsuarioService {
 
     @Transactional
     public Usuario guardar(Usuario usuario) {
-        // Encriptar password solo si es un usuario nuevo (HU-3)
-        if (usuario.getId() == null) {
-            usuario.setPassword(passwordEncoder.encode(usuario.getPassword()));
+        if (usuario.getId() != null) {
+            Usuario exist = usuarioRepository.findById(usuario.getId()).get();
+            exist.setNombreCompleto(usuario.getNombreCompleto());
+            exist.setEmail(usuario.getEmail());
+            exist.setRoles(usuario.getRoles());
+            exist.setActivo(usuario.isActivo());
+            if (usuario.getPassword() != null && !usuario.getPassword().isEmpty()) {
+                exist.setPassword(passwordEncoder.encode(usuario.getPassword()));
+            }
+            return usuarioRepository.save(exist);
         }
-        // Para edición, la lógica de password se manejaría diferente, 
-        // por ahora mantenemos esta base para cumplir la HU-3.
+        usuario.setPassword(passwordEncoder.encode(usuario.getPassword()));
         return usuarioRepository.save(usuario);
     }
 
+    @Transactional(readOnly = true)
     public boolean existeUsername(String username) {
         return usuarioRepository.existsByUsername(username);
     }
 
+    @Transactional(readOnly = true)
     public boolean existeEmail(String email) {
         return usuarioRepository.existsByEmail(email);
     }

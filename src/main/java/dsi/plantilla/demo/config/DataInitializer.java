@@ -2,8 +2,10 @@ package dsi.plantilla.demo.config;
 
 import dsi.plantilla.demo.models.Rol;
 import dsi.plantilla.demo.models.Usuario;
+import dsi.plantilla.demo.models.Puesto;
 import dsi.plantilla.demo.repositories.RolRepository;
 import dsi.plantilla.demo.repositories.UsuarioRepository;
+import dsi.plantilla.demo.repositories.PuestoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -19,18 +21,17 @@ public class DataInitializer implements CommandLineRunner {
 
     @Autowired
     private RolRepository rolRepository;
-
     @Autowired
     private UsuarioRepository usuarioRepository;
-
     @Autowired
-    private PasswordEncoder passwordEncoder; // Inyectamos el PasswordEncoder
+    private PuestoRepository puestoRepository;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Override
     public void run(String... args) throws Exception {
         // 1. Sembrar Roles
         List<String> nombresRoles = Arrays.asList("ADMINISTRADOR", "JEFE", "SUPERVISOR", "CONTADORA");
-
         for (String nombre : nombresRoles) {
             if (rolRepository.findByNombre(nombre).isEmpty()) {
                 Rol nuevoRol = new Rol();
@@ -39,22 +40,23 @@ public class DataInitializer implements CommandLineRunner {
             }
         }
 
-        // 2. Sembrar un usuario ADMINISTRADOR por defecto (para poder iniciar sesión)
+        // 2. Sembrar Puesto Inicial (Para evitar errores de nulos)
+        if (puestoRepository.findAll().isEmpty()) {
+            Puesto p = new Puesto();
+            p.setNombre("OPERARIO GENERAL");
+            puestoRepository.save(p);
+        }
+
+        // 3. Sembrar Usuario Admin
         if (usuarioRepository.findByUsername("admin").isEmpty()) {
             Usuario adminUser = new Usuario();
             adminUser.setUsername("admin");
-            adminUser.setNombreCompleto("Administrador del Sistema");
+            adminUser.setNombreCompleto("Administrador");
             adminUser.setEmail("admin@constructora.com");
-            adminUser.setPassword(passwordEncoder.encode("admin123")); // Contraseña encriptada
+            adminUser.setPassword(passwordEncoder.encode("1234"));
             adminUser.setActivo(true);
-
-            // Asignar el rol ADMINISTRADOR
-            Rol adminRol = rolRepository.findByNombre("ADMINISTRADOR")
-                                        .orElseThrow(() -> new RuntimeException("Error: Rol ADMINISTRADOR no encontrado."));
-            Set<Rol> roles = new HashSet<>();
-            roles.add(adminRol);
-            adminUser.setRoles(roles);
-
+            Rol adminRol = rolRepository.findByNombre("ADMINISTRADOR").get();
+            adminUser.setRoles(new HashSet<>(Arrays.asList(adminRol)));
             usuarioRepository.save(adminUser);
         }
     }

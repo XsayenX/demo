@@ -6,14 +6,12 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
-
 import java.time.LocalDate;
 
 @Entity
 @Table(name = "trabajadores")
 @Data
 public class Trabajador {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -22,20 +20,20 @@ public class Trabajador {
     private String nombre;
 
     @NotBlank(message = "El DUI es obligatorio")
-    @Pattern(regexp = "\\d{8}-\\d", message = "Formato de DUI no válido (ej: 00000000-0)")
+    @Pattern(regexp = "\\d{8}-\\d", message = "Formato: 00000000-0")
     @Column(unique = true, nullable = false)
     private String dui;
 
     @NotBlank(message = "El NSS es obligatorio")
-    @Column(unique = true, nullable = false)
     private String nss;
 
     @NotNull(message = "La fecha de ingreso es obligatoria")
     @DateTimeFormat(pattern = "yyyy-MM-dd")
     private LocalDate fechaIngreso;
 
-    @NotBlank(message = "El puesto es obligatorio")
-    private String puesto;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "puesto_id")
+    private Puesto puesto;
 
-    private boolean activo = true;
+    private boolean activo = true; // El getter será isActivo()
 }
