@@ -15,4 +15,8 @@ public class Puesto {
     @NotBlank(message = "El nombre del puesto es obligatorio")
     @Column(unique = true)
     private String nombre;
+
+    // NUEVO: Tarifa por hora para calcular planillas
+    @Column(nullable = false)
+    private Double salarioPorHora = 0.0; 
 }

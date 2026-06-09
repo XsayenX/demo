@@ -28,6 +28,9 @@ public class AsistenciaController {
     @Autowired private TrabajadorService trabajadorService;
     @Autowired private AsistenciaService asistenciaService;
     @Autowired private HoraExtraRepository horaExtraRepository;
+    
+    // NUEVA INYECCIÓN PARA CONTROLAR DÍAS CERRADOS
+    @Autowired private DiaCerradoRepository diaCerradoRepository;
 
     @GetMapping
     public String listar(Model model) {
@@ -37,9 +40,23 @@ public class AsistenciaController {
         
         long totalActivos = trabajadorRepository.findAll().stream().filter(Trabajador::isActivo).count();
         
+        // Obtener lista de fechas que ya fueron finalizadas
+        List<LocalDate> diasCerrados = diaCerradoRepository.findAll().stream()
+                .map(DiaCerrado::getFecha)
+                .collect(Collectors.toList());
+        
         model.addAttribute("asistenciasPorDia", agrupadas.descendingMap());
         model.addAttribute("totalActivos", totalActivos);
+        model.addAttribute("diasCerrados", diasCerrados); // Pasamos esto a la vista
         return "asistencias/lista";
+    }
+
+    // NUEVO ENDPOINT PARA FINALIZAR EL DÍA
+    @PostMapping("/cerrar-dia")
+    public String cerrarDia(@RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate fecha, RedirectAttributes flash) {
+        diaCerradoRepository.save(new DiaCerrado(fecha));
+        flash.addFlashAttribute("success", "El día ha sido Finalizado. Los trabajadores faltantes serán tomados como ausencias.");
+        return "redirect:/asistencias";
     }
 
     @GetMapping("/nueva")
@@ -58,13 +75,13 @@ public class AsistenciaController {
             Optional<Asistencia> asisOpt = existentes.stream()
                     .filter(a -> a.getTrabajador().getId().equals(t.getId())).findFirst();
             if (asisOpt.isPresent()) {
-                listaFinal.add(asisOpt.get()); // Aquí el objeto ya lleva su ID de la base de datos
+                listaFinal.add(asisOpt.get()); 
             } else {
                 Asistencia nueva = new Asistencia();
                 nueva.setTrabajador(t);
                 nueva.setFecha(fecha);
                 nueva.setEstado("PENDIENTE");
-                listaFinal.add(nueva); // Sin ID
+                listaFinal.add(nueva); 
             }
         }
         model.addAttribute("fecha", fecha);
@@ -74,8 +91,6 @@ public class AsistenciaController {
 
     @PostMapping("/guardar-masivo")
     public String guardarMasivo(@ModelAttribute AsistenciaDiariaDTO dto, RedirectAttributes flash) {
-        // LÓGICA DE SEGURIDAD: Solo filtramos los que NO tienen ID (nuevos)
-        // y que tengan las horas llenas. Los que tienen ID ya están en la DB, así que se ignoran.
         List<Asistencia> aGuardar = dto.getRegistros().stream()
                 .filter(a -> a.getId() == null && a.getHoraEntrada() != null && a.getHoraSalida() != null)
                 .collect(Collectors.toList());

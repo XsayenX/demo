@@ -6,6 +6,9 @@
     <div id="main-content">
         <header th:replace="~{fragments/layout :: topbar('Control de Jornadas')}"></header>
         <main class="content-body">
+            
+            <div th:if="${success}" class="alert alert-success border-0 shadow-sm mb-4" th:text="${success}"></div>
+
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h4 class="fw-bold">Reportes Diarios</h4>
                 <a href="/asistencias/nueva" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">
@@ -21,8 +24,15 @@
                                 <div><i class="bi bi-calendar3 me-2 text-primary"></i> <span class="fw-bold text-dark" th:text="${#temporals.format(entry.key, 'EEEE dd/MM/yyyy')}"></span></div>
                                 <div class="text-end">
                                     <span class="badge bg-success-subtle text-success border border-success me-2" th:text="${entry.value.size()} + ' Registrados'"></span>
-                                    <span th:if="${totalActivos - entry.value.size() > 0}" class="badge bg-warning-subtle text-warning border border-warning" th:text="${totalActivos - entry.value.size()} + ' Pendientes'"></span>
-                                    <span th:if="${totalActivos == entry.value.size()}" class="badge bg-success rounded-pill px-3"><i class="bi bi-check-all me-1"></i> Completado</span>
+                                    
+                                    <!-- Si el día ya está cerrado -->
+                                    <span th:if="${#lists.contains(diasCerrados, entry.key)}" class="badge bg-secondary rounded-pill px-3 shadow-sm"><i class="bi bi-lock-fill me-1"></i> Finalizado</span>
+                                    
+                                    <!-- Si el día NO está cerrado -->
+                                    <th:block th:unless="${#lists.contains(diasCerrados, entry.key)}">
+                                        <span th:if="${totalActivos - entry.value.size() > 0}" class="badge bg-warning-subtle text-warning text-dark border border-warning" th:text="${totalActivos - entry.value.size()} + ' Pendientes'"></span>
+                                        <span th:if="${totalActivos == entry.value.size()}" class="badge bg-success rounded-pill px-3"><i class="bi bi-check-all me-1"></i> Completado</span>
+                                    </th:block>
                                 </div>
                             </div>
                         </button>
@@ -40,8 +50,25 @@
                                     </tr>
                                 </tbody>
                             </table>
-                            <div class="p-3 bg-light text-center border-top">
-                                <a th:href="@{/asistencias/diaria(fecha=${entry.key})}" class="btn btn-sm btn-dark rounded-pill px-4">Completar este día <i class="bi bi-pencil-square ms-1"></i></a>
+                            
+                            <!-- BOTONERA INFERIOR (COMPLETAR / FINALIZAR) -->
+                            <div class="p-3 bg-light text-center border-top d-flex justify-content-center gap-2">
+                                
+                                <th:block th:if="${#lists.contains(diasCerrados, entry.key)}">
+                                    <span class="text-muted fw-bold small"><i class="bi bi-info-circle me-1"></i> El registro de este día está finalizado.</span>
+                                </th:block>
+
+                                <th:block th:unless="${#lists.contains(diasCerrados, entry.key)}">
+                                    <a th:href="@{/asistencias/diaria(fecha=${entry.key})}" class="btn btn-sm btn-dark rounded-pill px-4">Completar este día <i class="bi bi-pencil-square ms-1"></i></a>
+                                    
+                                    <form th:action="@{/asistencias/cerrar-dia}" method="post" class="d-inline">
+                                        <input type="hidden" name="fecha" th:value="${entry.key}">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-4 shadow-sm" onclick="return confirm('¿Seguro que deseas finalizar este día? Se ignorarán los trabajadores que no hayas registrado (Ausencias).')">
+                                            Finalizar Día <i class="bi bi-lock-fill ms-1"></i>
+                                        </button>
+                                    </form>
+                                </th:block>
+
                             </div>
                         </div>
                     </div>
