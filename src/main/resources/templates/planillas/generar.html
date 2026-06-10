@@ -2,16 +2,31 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/layout :: head('Generar Planilla')}"></head>
 <body>
-    <aside th:replace="~{fragments/layout :: sidebar('asistencias')}"></aside>
+    <aside th:replace="~{fragments/layout :: sidebar('planillas')}"></aside>
     <div id="main-content">
         <header th:replace="~{fragments/layout :: topbar('Cierre de Planilla')}"></header>
         <main class="content-body">
+
+            <!-- ALERTA DE VALIDACIÓN (Cruces de fechas o errores) -->
+            <div th:if="${error}" class="alert alert-danger border-0 shadow-sm mb-4">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i> <span th:text="${error}"></span>
+            </div>
+
+            <!-- BOTÓN DEL HISTORIAL -->
+            <div class="d-flex justify-content-end mb-3">
+                <a href="/planillas/historial" class="btn btn-outline-dark rounded-pill px-4 fw-bold shadow-sm">
+                    <i class="bi bi-clock-history me-2"></i>Ver Historial de Planillas
+                </a>
+            </div>
+
             <div class="row justify-content-center">
                 <div class="col-md-6">
+                    <!-- DISEÑO ORIGINAL RESTAURADO -->
                     <div class="card border-0 shadow-sm p-5 text-center">
                         <i class="bi bi-calculator display-1 text-primary mb-4"></i>
                         <h3 class="fw-bold mb-4">Cálculo de Pagos</h3>
-                        <form th:action="@{/planillas/generar}" method="post">
+                        
+                        <form id="formPlanilla" th:action="@{/planillas/generar}" method="post">
                             <div class="row mb-4">
                                 <div class="col text-start">
                                     <label class="form-label fw-bold small">Desde</label>
@@ -22,13 +37,55 @@
                                     <input type="date" name="fin" th:value="${fechaFin}" class="form-control" required>
                                 </div>
                             </div>
-                            <button type="submit" class="btn btn-primary btn-lg w-100 rounded-pill fw-bold">Generar Resumen <i class="bi bi-file-earmark-text ms-2"></i></button>
+
+                            <!-- Barra de progreso (Oculta por defecto, se activa al dar clic) -->
+                            <div id="loadingSection" class="d-none text-center mb-4">
+                                <h6 class="fw-bold text-primary mb-2 small">Calculando horas y comprobando fechas...</h6>
+                                <div class="progress" style="height: 8px;">
+                                    <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" style="width: 0%"></div>
+                                </div>
+                            </div>
+
+                            <button type="button" id="btnGenerar" class="btn btn-primary btn-lg w-100 rounded-pill fw-bold shadow-sm">
+                                Generar Resumen <i class="bi bi-file-earmark-text ms-2"></i>
+                            </button>
+                            
                         </form>
                     </div>
                 </div>
             </div>
         </main>
     </div>
+    
     <script th:replace="~{fragments/layout :: script}"></script>
+    
+    <!-- SCRIPT DE EFECTO DE CARGA -->
+    <script>
+        document.getElementById('btnGenerar').addEventListener('click', function() {
+            const loadingSection = document.getElementById('loadingSection');
+            const progressBar = document.getElementById('progressBar');
+            const btn = document.getElementById('btnGenerar');
+            const form = document.getElementById('formPlanilla');
+
+            // Validar campos vacíos antes de cargar
+            if(!form.checkValidity()) { form.reportValidity(); return; }
+
+            // Mostrar UI de carga
+            loadingSection.classList.remove('d-none');
+            btn.classList.add('disabled');
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Procesando...';
+
+            // Animación de barra
+            let width = 0;
+            const interval = setInterval(() => {
+                width += 15;
+                progressBar.style.width = width + '%';
+                if(width >= 100) {
+                    clearInterval(interval);
+                    form.submit(); 
+                }
+            }, 180); 
+        });
+    </script>
 </body>
 </html>
