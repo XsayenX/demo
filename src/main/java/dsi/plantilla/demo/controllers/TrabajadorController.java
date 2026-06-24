@@ -6,6 +6,7 @@ import dsi.plantilla.demo.services.TrabajadorService;
 import dsi.plantilla.demo.repositories.PuestoRepository;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -14,13 +15,11 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 @RequestMapping("/trabajadores")
+@PreAuthorize("hasRole('SUPERVISOR')") // SOLO EL SUPERVISOR ENTRA AQUÍ
 public class TrabajadorController {
 
-    @Autowired
-    private TrabajadorService trabajadorService;
-
-    @Autowired
-    private PuestoRepository puestoRepository;
+    @Autowired private TrabajadorService trabajadorService;
+    @Autowired private PuestoRepository puestoRepository;
 
     @GetMapping
     public String listar(@RequestParam(name = "q", required = false) String q, Model model) {
@@ -31,7 +30,6 @@ public class TrabajadorController {
         return "trabajadores/lista";
     }
 
-    // --- GESTIÓN DE PUESTOS ---
     @GetMapping("/puestos")
     public String listarPuestos(Model model) {
         model.addAttribute("puestos", puestoRepository.findAll());
@@ -46,20 +44,16 @@ public class TrabajadorController {
         return "redirect:/trabajadores/puestos";
     }
 
-    // --- GUARDAR TRABAJADOR (Crear y Editar) ---
     @PostMapping("/guardar")
     public String guardar(@Valid @ModelAttribute Trabajador trabajador, BindingResult result, RedirectAttributes flash) {
         if (result.hasErrors()) {
             flash.addFlashAttribute("error", "Error en el formulario: " + result.getAllErrors().get(0).getDefaultMessage());
             return "redirect:/trabajadores";
         }
-
-        // Validación de DUI duplicado solo si es nuevo
         if (trabajador.getId() == null && trabajadorService.existeDui(trabajador.getDui())) {
             flash.addFlashAttribute("error", "El DUI ingresado ya está registrado.");
             return "redirect:/trabajadores";
         }
-
         trabajadorService.guardar(trabajador);
         flash.addFlashAttribute("success", "Datos del trabajador guardados correctamente.");
         return "redirect:/trabajadores";

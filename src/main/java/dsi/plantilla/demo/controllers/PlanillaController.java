@@ -19,7 +19,7 @@ import java.util.Optional;
 
 @Controller
 @RequestMapping("/planillas")
-@PreAuthorize("hasAnyRole('ADMINISTRADOR', 'CONTADORA')")
+@PreAuthorize("hasRole('CONTADORA')") // SOLO CONTADORA ENTRA AQUÍ
 public class PlanillaController {
 
     @Autowired private PlanillaService planillaService;
@@ -38,32 +38,17 @@ public class PlanillaController {
             @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate fin,
             Model model, RedirectAttributes flash) {
 
-        // 1. Validar fechas lógicas
-        if (inicio.isAfter(fin)) {
-            flash.addFlashAttribute("error", "La fecha de inicio no puede ser mayor a la fecha de fin.");
-            return "redirect:/planillas";
-        }
-
-        // 2. Validar que no choque con otra planilla
-        if (planillaRepository.existsOverlappingPlanilla(inicio, fin)) {
-            flash.addFlashAttribute("error", "Ya existe una planilla guardada que choca con este rango de fechas. Revisa el historial.");
-            return "redirect:/planillas";
-        }
+        if (inicio.isAfter(fin)) { flash.addFlashAttribute("error", "La fecha de inicio no puede ser mayor a la fecha de fin."); return "redirect:/planillas"; }
+        if (planillaRepository.existsOverlappingPlanilla(inicio, fin)) { flash.addFlashAttribute("error", "Ya existe una planilla guardada que choca con este rango de fechas. Revisa el historial."); return "redirect:/planillas"; }
 
         List<PlanillaResumenDTO> resumen = planillaService.simularPlanilla(inicio, fin);
-
-        // 3. Validar que haya jornadas aprobadas
-        if (resumen.isEmpty()) {
-            flash.addFlashAttribute("error", "No se encontraron asistencias en estado APROBADO en este período.");
-            return "redirect:/planillas";
-        }
+        if (resumen.isEmpty()) { flash.addFlashAttribute("error", "No se encontraron asistencias en estado APROBADO en este período."); return "redirect:/planillas"; }
 
         model.addAttribute("resumen", resumen);
         model.addAttribute("fInicio", inicio);
         model.addAttribute("fFin", fin);
         model.addAttribute("totalNomina", resumen.stream().mapToDouble(PlanillaResumenDTO::getSalarioNeto).sum());
         model.addAttribute("totalDeducciones", resumen.stream().mapToDouble(PlanillaResumenDTO::getDeducciones).sum());
-        
         return "planillas/resultado";
     }
 
@@ -73,11 +58,7 @@ public class PlanillaController {
             @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate fin,
             RedirectAttributes flash) {
         
-        if (planillaRepository.existsOverlappingPlanilla(inicio, fin)) {
-            flash.addFlashAttribute("error", "Intento de duplicidad bloqueado. Ya existe una planilla en este rango.");
-            return "redirect:/planillas";
-        }
-
+        if (planillaRepository.existsOverlappingPlanilla(inicio, fin)) { flash.addFlashAttribute("error", "Intento de duplicidad bloqueado. Ya existe una planilla en este rango."); return "redirect:/planillas"; }
         planillaService.guardarPlanilla(inicio, fin);
         flash.addFlashAttribute("success", "¡Planilla registrada y cerrada exitosamente!");
         return "redirect:/planillas/historial";
@@ -89,14 +70,10 @@ public class PlanillaController {
         return "planillas/historial";
     }
 
-    // NUEVO ENDPOINT: Ver los detalles de una planilla guardada
     @GetMapping("/historial/{id}")
     public String verDetallePlanilla(@PathVariable Long id, Model model, RedirectAttributes flash) {
         Optional<Planilla> planillaOpt = planillaRepository.findByIdWithDetalles(id);
-        if (planillaOpt.isEmpty()) {
-            flash.addFlashAttribute("error", "La planilla no existe.");
-            return "redirect:/planillas/historial";
-        }
+        if (planillaOpt.isEmpty()) { flash.addFlashAttribute("error", "La planilla no existe."); return "redirect:/planillas/historial"; }
         model.addAttribute("planilla", planillaOpt.get());
         return "planillas/detalle";
     }

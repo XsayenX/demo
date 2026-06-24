@@ -40,17 +40,27 @@
 </head>
 <body>
     
-    <!-- FRAGMENTO SIDEBAR ORIGINAL -->
+    <!-- FRAGMENTO SIDEBAR CON RBAC ESTRICTO -->
     <aside th:fragment="sidebar(activePage)" id="sidebar">
         <div class="sidebar-toggle-area"><button id="toggleMenu"><i class="bi bi-list"></i></button></div>
         <div class="nav-wrapper">
             <nav class="nav flex-column">
-                <a class="nav-link" th:classappend="${activePage == 'home' ? 'active' : ''}" href="/"><i class="bi bi-house"></i> <span class="nav-text">Inicio</span></a>
+                <a class="nav-link" th:classappend="${activePage == 'home' ? 'active' : ''}" href="/dashboard"><i class="bi bi-house"></i> <span class="nav-text">Inicio</span></a>
+                
+                <!-- Solo Admin -->
                 <div sec:authorize="hasRole('ADMINISTRADOR')"><a class="nav-link" th:classappend="${activePage == 'usuarios' ? 'active' : ''}" href="/usuarios"><i class="bi bi-shield-lock"></i> <span class="nav-text">Usuarios</span></a></div>
-                <div sec:authorize="hasAnyRole('ADMINISTRADOR','SUPERVISOR')"><a class="nav-link" th:classappend="${activePage == 'trabajadores' ? 'active' : ''}" href="/trabajadores"><i class="bi bi-people"></i> <span class="nav-text">Trabajadores</span></a></div>
-                <div sec:authorize="hasAnyRole('ADMINISTRADOR','SUPERVISOR','JEFE','CONTADORA')"><a class="nav-link" th:classappend="${activePage == 'asistencias' ? 'active' : ''}" href="/asistencias"><i class="bi bi-calendar-check"></i> <span class="nav-text">Asistencias</span></a></div>
-                <div sec:authorize="hasAnyRole('ADMINISTRADOR','CONTADORA')"><a class="nav-link" th:classappend="${activePage == 'planillas' ? 'active' : ''}" href="/planillas"><i class="bi bi-cash-coin"></i> <span class="nav-text">Planillas</span></a></div>
+                
+                <!-- Admin y Jefe -->
                 <div sec:authorize="hasAnyRole('ADMINISTRADOR','JEFE')"><a class="nav-link" th:classappend="${activePage == 'clientes' ? 'active' : ''}" href="/clientes"><i class="bi bi-briefcase"></i> <span class="nav-text">Clientes y Proy.</span></a></div>
+                
+                <!-- Solo Supervisor -->
+                <div sec:authorize="hasRole('SUPERVISOR')"><a class="nav-link" th:classappend="${activePage == 'trabajadores' ? 'active' : ''}" href="/trabajadores"><i class="bi bi-people"></i> <span class="nav-text">Trabajadores</span></a></div>
+                
+                <!-- Supervisor, Jefe y Contadora -->
+                <div sec:authorize="hasAnyRole('SUPERVISOR','JEFE','CONTADORA')"><a class="nav-link" th:classappend="${activePage == 'asistencias' ? 'active' : ''}" href="/asistencias"><i class="bi bi-calendar-check"></i> <span class="nav-text">Asistencias</span></a></div>
+                
+                <!-- Solo Contadora -->
+                <div sec:authorize="hasRole('CONTADORA')"><a class="nav-link" th:classappend="${activePage == 'planillas' ? 'active' : ''}" href="/planillas"><i class="bi bi-cash-coin"></i> <span class="nav-text">Planillas</span></a></div>
             </nav>
         </div>
     </aside>
@@ -60,19 +70,16 @@
         <div class="d-flex align-items-center">
             <div class="brand-name me-4 pe-4 border-end"><i class="bi bi-hexagon-fill text-primary me-2"></i>PG SISTEMA</div>
             
-            <!-- Breadcrumbs dinámico -->
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-0 fw-semibold" id="auto-breadcrumb" style="font-size: 0.95rem;">
                     <li class="breadcrumb-item">
-                        <a href="/" class="text-decoration-none text-muted"><i class="bi bi-house-door-fill"></i> Inicio</a>
+                        <a href="/dashboard" class="text-decoration-none text-muted"><i class="bi bi-house-door-fill"></i> Inicio</a>
                     </li>
-                    <!-- El JS inyectará el módulo padre aquí automáticamente -->
                     <li class="breadcrumb-item active text-primary" aria-current="page" th:text="${pageName}"></li>
                 </ol>
             </nav>
         </div>
         
-        <!-- Dropdown Usuario Original -->
         <div class="dropdown">
             <div class="profile-pill dropdown-toggle" data-bs-toggle="dropdown">
                 <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold me-2" style="width: 32px; height: 32px;"><span th:text="${#strings.substring(#authentication.name,0,1).toUpperCase()}"></span></div>
@@ -87,7 +94,7 @@
     <!-- FRAGMENTO SCRIPTS -->
     <script th:fragment="script">
         document.addEventListener("DOMContentLoaded", function() {
-            // 1. Sidebar Original
+            // Sidebar Original
             const sidebar = document.getElementById('sidebar');
             const main = document.getElementById('main-content');
             const toggle = document.getElementById('toggleMenu');
@@ -103,9 +110,9 @@
                 main.classList.add('expanded');
             }
 
-            // 2. Breadcrumbs Dinámicos
+            // Breadcrumbs Dinámicos
             const pathArray = window.location.pathname.split('/').filter(x => x);
-            if (pathArray.length > 0 && pathArray[0] !== 'error') {
+            if (pathArray.length > 0 && pathArray[0] !== 'error' && pathArray[0] !== 'dashboard') {
                 const parentPath = pathArray[0];
                 const parentName = parentPath.charAt(0).toUpperCase() + parentPath.slice(1).replace(/-/g, ' '); 
                 const parentUrl = '/' + parentPath;
@@ -124,7 +131,7 @@
                 }
             }
 
-            // 3. Ocultar Alertas a los 5 segundos
+            // Ocultar Alertas
             setTimeout(() => {
                 document.querySelectorAll('.alert').forEach(alert => {
                     alert.style.transition = "opacity 0.5s ease"; 

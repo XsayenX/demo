@@ -25,17 +25,23 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/css/**", "/js/**", "/img/**", "/webjars/**").permitAll()
-                .requestMatchers("/").authenticated()
+                .requestMatchers("/", "/css/**", "/js/**", "/img/**", "/webjars/**").permitAll()
+                .requestMatchers("/dashboard").authenticated()
+                
+                // RUTAS DE IT / ADMIN
                 .requestMatchers("/usuarios/**").hasRole("ADMINISTRADOR")
-                .requestMatchers("/trabajadores/**").hasAnyRole("ADMINISTRADOR", "SUPERVISOR")
-                // El JEFE y otros roles operativos pueden entrar a asistencias
-                .requestMatchers("/asistencias/**").hasAnyRole("ADMINISTRADOR", "SUPERVISOR", "CONTADORA", "JEFE")
+                .requestMatchers("/clientes/**").hasAnyRole("ADMINISTRADOR", "JEFE")
+                
+                // RUTAS OPERATIVAS (SIN ADMIN)
+                .requestMatchers("/trabajadores/**").hasRole("SUPERVISOR")
+                .requestMatchers("/asistencias/**").hasAnyRole("SUPERVISOR", "CONTADORA", "JEFE")
+                .requestMatchers("/planillas/**").hasRole("CONTADORA")
+                
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form
                 .loginPage("/login")
-                .defaultSuccessUrl("/", true)
+                .defaultSuccessUrl("/dashboard", true)
                 .permitAll()
             )
             .logout(logout -> logout

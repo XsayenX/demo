@@ -11,6 +11,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.LocalDate;
@@ -28,61 +29,57 @@ public class AsistenciaController {
     @Autowired private TrabajadorService trabajadorService;
     @Autowired private AsistenciaService asistenciaService;
     @Autowired private HoraExtraRepository horaExtraRepository;
-    
-    // NUEVA INYECCIÓN PARA CONTROLAR DÍAS CERRADOS
     @Autowired private DiaCerradoRepository diaCerradoRepository;
 
     @GetMapping
     public String listar(Model model) {
         List<Asistencia> todas = asistenciaRepository.findAll();
-        TreeMap<LocalDate, List<Asistencia>> agrupadas = todas.stream()
-                .collect(Collectors.groupingBy(Asistencia::getFecha, TreeMap::new, Collectors.toList()));
-        
-        long totalActivos = trabajadorRepository.findAll().stream().filter(Trabajador::isActivo).count();
-        
-        // Obtener lista de fechas que ya fueron finalizadas
-        List<LocalDate> diasCerrados = diaCerradoRepository.findAll().stream()
-                .map(DiaCerrado::getFecha)
-                .collect(Collectors.toList());
-        
+        TreeMap<LocalDate, List<Asistencia>> agrupadas = todas.stream().collect(Collectors.groupingBy(Asistencia::getFecha, TreeMap::new, Collectors.toList()));
         model.addAttribute("asistenciasPorDia", agrupadas.descendingMap());
-        model.addAttribute("totalActivos", totalActivos);
-        model.addAttribute("diasCerrados", diasCerrados); // Pasamos esto a la vista
+        model.addAttribute("totalActivos", trabajadorRepository.findAll().stream().filter(Trabajador::isActivo).count());
+        model.addAttribute("diasCerrados", diaCerradoRepository.findAll().stream().map(DiaCerrado::getFecha).collect(Collectors.toList())); 
         return "asistencias/lista";
     }
 
-    // NUEVO ENDPOINT PARA FINALIZAR EL DÍA
+    // NUEVO ENDPOINT: Importar Archivo Excel (Solo Admin y Supervisor)
+    @PostMapping("/importar")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'SUPERVISOR')")
+    public String importarExcel(@RequestParam("archivo") MultipartFile archivo, RedirectAttributes flash) {
+        if (archivo.isEmpty()) {
+            flash.addFlashAttribute("error", "Seleccione un archivo Excel válido.");
+            return "redirect:/asistencias";
+        }
+        try {
+            int registrados = asistenciaService.importarDesdeExcel(archivo.getInputStream());
+            flash.addFlashAttribute("success", "Importación exitosa. Se registraron " + registrados + " nuevas jornadas.");
+        } catch (Exception e) {
+            flash.addFlashAttribute("error", "Error al procesar el archivo: Verifique el formato de las columnas.");
+        }
+        return "redirect:/asistencias";
+    }
+
     @PostMapping("/cerrar-dia")
+    @PreAuthorize("hasRole('SUPERVISOR')")
     public String cerrarDia(@RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate fecha, RedirectAttributes flash) {
         diaCerradoRepository.save(new DiaCerrado(fecha));
-        flash.addFlashAttribute("success", "El día ha sido Finalizado. Los trabajadores faltantes serán tomados como ausencias.");
+        flash.addFlashAttribute("success", "El día ha sido Finalizado.");
         return "redirect:/asistencias";
     }
 
     @GetMapping("/nueva")
+    @PreAuthorize("hasRole('SUPERVISOR')")
     public String elegirFecha() { return "asistencias/elegir-fecha"; }
 
     @GetMapping("/diaria")
+    @PreAuthorize("hasRole('SUPERVISOR')")
     public String reporteDiario(@RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate fecha, Model model) {
-        List<Trabajador> activos = trabajadorRepository.findAll().stream()
-                .filter(Trabajador::isActivo).collect(Collectors.toList());
-        
-        List<Asistencia> existentes = asistenciaRepository.findAll().stream()
-                .filter(a -> a.getFecha().equals(fecha)).collect(Collectors.toList());
-
+        List<Trabajador> activos = trabajadorRepository.findAll().stream().filter(Trabajador::isActivo).collect(Collectors.toList());
+        List<Asistencia> existentes = asistenciaRepository.findAll().stream().filter(a -> a.getFecha().equals(fecha)).collect(Collectors.toList());
         List<Asistencia> listaFinal = new ArrayList<>();
         for (Trabajador t : activos) {
-            Optional<Asistencia> asisOpt = existentes.stream()
-                    .filter(a -> a.getTrabajador().getId().equals(t.getId())).findFirst();
-            if (asisOpt.isPresent()) {
-                listaFinal.add(asisOpt.get()); 
-            } else {
-                Asistencia nueva = new Asistencia();
-                nueva.setTrabajador(t);
-                nueva.setFecha(fecha);
-                nueva.setEstado("PENDIENTE");
-                listaFinal.add(nueva); 
-            }
+            Optional<Asistencia> asisOpt = existentes.stream().filter(a -> a.getTrabajador().getId().equals(t.getId())).findFirst();
+            if (asisOpt.isPresent()) listaFinal.add(asisOpt.get()); 
+            else { Asistencia nueva = new Asistencia(); nueva.setTrabajador(t); nueva.setFecha(fecha); nueva.setEstado("PENDIENTE"); listaFinal.add(nueva); }
         }
         model.addAttribute("fecha", fecha);
         model.addAttribute("dto", new AsistenciaDiariaDTO(listaFinal));
@@ -90,35 +87,19 @@ public class AsistenciaController {
     }
 
     @PostMapping("/guardar-masivo")
+    @PreAuthorize("hasRole('SUPERVISOR')")
     public String guardarMasivo(@ModelAttribute AsistenciaDiariaDTO dto, RedirectAttributes flash) {
-        List<Asistencia> aGuardar = dto.getRegistros().stream()
-                .filter(a -> a.getId() == null && a.getHoraEntrada() != null && a.getHoraSalida() != null)
-                .collect(Collectors.toList());
-        
-        if(!aGuardar.isEmpty()) {
-            asistenciaRepository.saveAll(aGuardar);
-            flash.addFlashAttribute("success", "Se agregaron " + aGuardar.size() + " registros faltantes.");
-        } else {
-            flash.addFlashAttribute("info", "No se detectaron nuevos registros para guardar.");
-        }
-        
+        List<Asistencia> aGuardar = dto.getRegistros().stream().filter(a -> a.getId() == null && a.getHoraEntrada() != null && a.getHoraSalida() != null).collect(Collectors.toList());
+        if(!aGuardar.isEmpty()) { asistenciaRepository.saveAll(aGuardar); flash.addFlashAttribute("success", "Se agregaron " + aGuardar.size() + " registros faltantes."); }
         return "redirect:/asistencias";
     }
 
     @GetMapping("/detalle/{id}")
     public String verDetalle(@PathVariable Long id, Model model, RedirectAttributes flash) {
         Optional<Trabajador> trabajadorOpt = trabajadorService.buscarPorId(id);
-        if (trabajadorOpt.isEmpty()) {
-            flash.addFlashAttribute("error", "Trabajador no encontrado.");
-            return "redirect:/asistencias";
-        }
+        if (trabajadorOpt.isEmpty()) { flash.addFlashAttribute("error", "Trabajador no encontrado."); return "redirect:/asistencias"; }
         List<Asistencia> historial = asistenciaService.historialPorTrabajador(id);
-        Map<String, List<Asistencia>> jornadasAgrupadas = historial.stream()
-                .collect(Collectors.groupingBy(
-                        a -> a.getFecha().getMonth().getDisplayName(TextStyle.FULL, new Locale("es", "ES")).toUpperCase() 
-                             + " " + a.getFecha().getYear(),
-                        LinkedHashMap::new, Collectors.toList()
-                ));
+        Map<String, List<Asistencia>> jornadasAgrupadas = historial.stream().collect(Collectors.groupingBy(a -> a.getFecha().getMonth().getDisplayName(TextStyle.FULL, new Locale("es", "ES")).toUpperCase() + " " + a.getFecha().getYear(), LinkedHashMap::new, Collectors.toList()));
         model.addAttribute("trabajador", trabajadorOpt.get());
         model.addAttribute("jornadasPorMes", jornadasAgrupadas);
         model.addAttribute("totalBaseGlobal", String.format("%.2f", historial.stream().mapToDouble(Asistencia::getHorasBaseSiAprobado).sum()));
@@ -128,10 +109,8 @@ public class AsistenciaController {
     }
 
     @PostMapping("/revisar")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'JEFE')")
-    public String revisarAsistencia(@RequestParam Long id, @RequestParam String accion, 
-                                   @RequestParam(required = false) String observaciones,
-                                   Authentication auth, RedirectAttributes flash) {
+    @PreAuthorize("hasRole('JEFE')")
+    public String revisarAsistencia(@RequestParam Long id, @RequestParam String accion, @RequestParam(required = false) String observaciones, Authentication auth, RedirectAttributes flash) {
         Asistencia asistencia = asistenciaRepository.findById(id).orElse(null);
         if (asistencia != null) {
             asistencia.setEstado(accion.equals("APROBAR") ? "APROBADO" : "RECHAZADO");
@@ -144,6 +123,7 @@ public class AsistenciaController {
     }
 
     @PostMapping("/horas-extra/guardar")
+    @PreAuthorize("hasRole('SUPERVISOR')")
     public String guardarHoraExtra(@ModelAttribute HoraExtra horaExtra, RedirectAttributes flash) {
         Asistencia asis = asistenciaRepository.findById(horaExtra.getAsistencia().getId()).orElse(null);
         if (asis != null && "PENDIENTE".equals(asis.getEstado())) {

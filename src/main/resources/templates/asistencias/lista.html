@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head th:replace="~{fragments/layout :: head('Asistencias')}"></head>
 <body>
     <aside th:replace="~{fragments/layout :: sidebar('asistencias')}"></aside>
@@ -8,12 +8,21 @@
         <main class="content-body">
             
             <div th:if="${success}" class="alert alert-success border-0 shadow-sm mb-4" th:text="${success}"></div>
+            <div th:if="${error}" class="alert alert-danger border-0 shadow-sm mb-4" th:text="${error}"></div>
 
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h4 class="fw-bold">Reportes Diarios</h4>
-                <a href="/asistencias/nueva" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">
-                    <i class="bi bi-plus-lg me-2"></i>Reportar Día
-                </a>
+                
+                <div class="d-flex gap-2">
+                    <!-- BOTÓN IMPORTAR EXCEL -->
+                    <button sec:authorize="hasRole('SUPERVISOR')" class="btn btn-success rounded-pill px-4 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalImportarExcel">
+                        <i class="bi bi-file-earmark-excel-fill me-2"></i>Importar Excel
+                    </button>
+                    <!-- BOTÓN REPORTAR MANUALMENTE -->
+                    <a sec:authorize="hasRole('SUPERVISOR')" href="/asistencias/nueva" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">
+                        <i class="bi bi-plus-lg me-2"></i>Reportar Día
+                    </a>
+                </div>
             </div>
 
             <div class="accordion border-0 shadow-sm" id="accAsis">
@@ -25,10 +34,8 @@
                                 <div class="text-end">
                                     <span class="badge bg-success-subtle text-success border border-success me-2" th:text="${entry.value.size()} + ' Registrados'"></span>
                                     
-                                    <!-- Si el día ya está cerrado -->
                                     <span th:if="${#lists.contains(diasCerrados, entry.key)}" class="badge bg-secondary rounded-pill px-3 shadow-sm"><i class="bi bi-lock-fill me-1"></i> Finalizado</span>
                                     
-                                    <!-- Si el día NO está cerrado -->
                                     <th:block th:unless="${#lists.contains(diasCerrados, entry.key)}">
                                         <span th:if="${totalActivos - entry.value.size() > 0}" class="badge bg-warning-subtle text-warning text-dark border border-warning" th:text="${totalActivos - entry.value.size()} + ' Pendientes'"></span>
                                         <span th:if="${totalActivos == entry.value.size()}" class="badge bg-success rounded-pill px-3"><i class="bi bi-check-all me-1"></i> Completado</span>
@@ -51,29 +58,78 @@
                                 </tbody>
                             </table>
                             
-                            <!-- BOTONERA INFERIOR (COMPLETAR / FINALIZAR) -->
                             <div class="p-3 bg-light text-center border-top d-flex justify-content-center gap-2">
-                                
                                 <th:block th:if="${#lists.contains(diasCerrados, entry.key)}">
                                     <span class="text-muted fw-bold small"><i class="bi bi-info-circle me-1"></i> El registro de este día está finalizado.</span>
                                 </th:block>
-
                                 <th:block th:unless="${#lists.contains(diasCerrados, entry.key)}">
-                                    <a th:href="@{/asistencias/diaria(fecha=${entry.key})}" class="btn btn-sm btn-dark rounded-pill px-4">Completar este día <i class="bi bi-pencil-square ms-1"></i></a>
-                                    
-                                    <form th:action="@{/asistencias/cerrar-dia}" method="post" class="d-inline">
-                                        <input type="hidden" name="fecha" th:value="${entry.key}">
-                                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-4 shadow-sm" onclick="return confirm('¿Seguro que deseas finalizar este día? Se ignorarán los trabajadores que no hayas registrado (Ausencias).')">
-                                            Finalizar Día <i class="bi bi-lock-fill ms-1"></i>
-                                        </button>
-                                    </form>
+                                    <th:block sec:authorize="hasRole('SUPERVISOR')">
+                                        <a th:href="@{/asistencias/diaria(fecha=${entry.key})}" class="btn btn-sm btn-dark rounded-pill px-4">Completar este día <i class="bi bi-pencil-square ms-1"></i></a>
+                                        <form th:action="@{/asistencias/cerrar-dia}" method="post" class="d-inline">
+                                            <input type="hidden" name="fecha" th:value="${entry.key}">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-4 shadow-sm" onclick="return confirm('¿Seguro que deseas finalizar este día?')">
+                                                Finalizar Día <i class="bi bi-lock-fill ms-1"></i>
+                                            </button>
+                                        </form>
+                                    </th:block>
+                                    <th:block sec:authorize="hasAnyRole('JEFE', 'CONTADORA')">
+                                        <span class="text-muted fw-bold small"><i class="bi bi-clock-history me-1"></i> Este día aún está en proceso de registro por los supervisores.</span>
+                                    </th:block>
                                 </th:block>
-
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+
+            <!-- MODAL IMPORTAR EXCEL -->
+            <div class="modal fade" id="modalImportarExcel" tabindex="-1">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content border-0 shadow-lg">
+                        <!-- IMPORTANTE: enctype multipart para subir archivos -->
+                        <form th:action="@{/asistencias/importar}" method="post" enctype="multipart/form-data">
+                            <div class="modal-header bg-success text-white border-0">
+                                <h5 class="modal-title fw-bold"><i class="bi bi-file-earmark-excel-fill me-2"></i>Importar desde Excel</h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body p-4">
+                                <div class="alert alert-success bg-success bg-opacity-10 border-success border-opacity-25 text-success small mb-4">
+                                    <i class="bi bi-info-circle-fill me-1"></i> <strong>Instrucciones:</strong> El archivo debe ser <b>.xlsx</b> y la primera fila (encabezado) será ignorada.
+                                </div>
+                                <p class="small fw-bold text-muted mb-2">Estructura obligatoria de las columnas (A, B, C, D):</p>
+                                <table class="table table-bordered table-sm small mb-4">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>A (DUI)</th>
+                                            <th>B (Fecha)</th>
+                                            <th>C (Entrada)</th>
+                                            <th>D (Salida)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="text-muted">
+                                        <tr>
+                                            <td>01234567-8</td>
+                                            <td>2026-06-25</td>
+                                            <td>06:00</td>
+                                            <td>14:00</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                
+                                <div class="mb-2">
+                                    <label class="form-label fw-bold small text-muted">Seleccionar Archivo</label>
+                                    <input class="form-control bg-light border-0" type="file" name="archivo" accept=".xlsx" required>
+                                </div>
+                            </div>
+                            <div class="modal-footer border-0 bg-light">
+                                <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="submit" class="btn btn-success rounded-pill px-4 fw-bold shadow-sm">Procesar y Guardar</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
         </main>
     </div>
     <script th:replace="~{fragments/layout :: script}"></script>
