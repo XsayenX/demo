@@ -23,7 +23,6 @@ public class UsuarioService {
         return usuarioRepository.findAll();
     }
 
-    // NUEVO: Método para buscar usuarios
     @Transactional(readOnly = true)
     public List<Usuario> buscar(String termino) {
         if (termino != null && !termino.isEmpty()) {
@@ -35,6 +34,12 @@ public class UsuarioService {
     @Transactional(readOnly = true)
     public Optional<Usuario> buscarPorId(Long id) {
         return usuarioRepository.findById(id);
+    }
+
+    // ESTE ERA EL MÉTODO FALTANTE QUE HACÍA CRASHEAR LA APLICACIÓN
+    @Transactional(readOnly = true)
+    public Optional<Usuario> buscarPorUsername(String username) {
+        return usuarioRepository.findByUsername(username);
     }
 
     @Transactional

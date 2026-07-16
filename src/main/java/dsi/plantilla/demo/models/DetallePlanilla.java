@@ -25,7 +25,7 @@ public class DetallePlanilla {
 
     private Double salarioBase;
     private Double montoExtras;
-    private Double bonos; // <-- NUEVO
+    private Double bonos;
     private Double deducciones; 
     private Double salarioNeto;
 }

@@ -63,8 +63,14 @@
                 <!-- Supervisor, Jefe y Contadora -->
                 <div sec:authorize="hasAnyRole('SUPERVISOR','JEFE','CONTADORA')"><a class="nav-link" th:classappend="${activePage == 'asistencias' ? 'active' : ''}" href="/asistencias"><i class="bi bi-calendar-check"></i> <span class="nav-text">Asistencias</span></a></div>
                 
+                <!-- Supervisor, Jefe y Contadora -->
+                <div sec:authorize="hasAnyRole('SUPERVISOR','JEFE','CONTADORA')"><a class="nav-link" th:classappend="${activePage == 'facturas' ? 'active' : ''}" href="/facturas"><i class="bi bi-receipt"></i> <span class="nav-text">Facturas/Gastos</span></a></div>
+
                 <!-- Solo Contadora -->
                 <div sec:authorize="hasRole('CONTADORA')"><a class="nav-link" th:classappend="${activePage == 'planillas' ? 'active' : ''}" href="/planillas"><i class="bi bi-cash-coin"></i> <span class="nav-text">Planillas</span></a></div>
+                
+                <div sec:authorize="hasRole('CONTADORA')"><a class="nav-link" th:classappend="${activePage == 'facturacion' ? 'active' : ''}" href="/facturacion/historial"><i class="bi bi-filetype-xml"></i> <span class="nav-text">Exportar Llama</span></a></div>
+
             </nav>
         </div>
     </aside>

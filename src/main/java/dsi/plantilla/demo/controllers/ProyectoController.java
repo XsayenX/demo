@@ -2,6 +2,7 @@ package dsi.plantilla.demo.controllers;
 
 import dsi.plantilla.demo.models.Proyecto;
 import dsi.plantilla.demo.services.ClienteService;
+import dsi.plantilla.demo.services.FacturaService;
 import dsi.plantilla.demo.services.ProyectoService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,17 +13,31 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 @Controller
 @RequestMapping("/proyectos")
 @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'JEFE')")
 public class ProyectoController {
 
     @Autowired private ProyectoService proyectoService;
-    @Autowired private ClienteService clienteService; // Para llenar el <select> de clientes
+    @Autowired private ClienteService clienteService;
+    @Autowired private FacturaService facturaService; // <-- NUEVO INYECTADO
 
     @GetMapping
     public String listar(@RequestParam(name = "q", required = false) String q, Model model) {
-        model.addAttribute("proyectos", proyectoService.buscar(q));
+        List<Proyecto> proyectos = proyectoService.buscar(q);
+        
+        // HU-21 Tarea 4: Diccionario con la suma de facturas por cada proyecto
+        Map<Long, Double> gastosAcumulados = new HashMap<>();
+        for (Proyecto p : proyectos) {
+            gastosAcumulados.put(p.getId(), facturaService.calcularGastoAcumulado(p.getId()));
+        }
+
+        model.addAttribute("proyectos", proyectos);
+        model.addAttribute("gastos", gastosAcumulados); // <-- ENVIAMOS A LA VISTA
         model.addAttribute("clientes", clienteService.buscar(null));
         model.addAttribute("q", q);
         model.addAttribute("nuevoProyecto", new Proyecto());
@@ -35,8 +50,6 @@ public class ProyectoController {
             flash.addFlashAttribute("error", "Error en el formulario: " + result.getAllErrors().get(0).getDefaultMessage());
             return "redirect:/proyectos";
         }
-
-        // Tarea 3 de HU-13: Validar reglas de negocio en fechas
         if (proyecto.getFechaFin() != null && proyecto.getFechaFin().isBefore(proyecto.getFechaInicio())) {
             flash.addFlashAttribute("error", "Error: La fecha de finalización no puede ser anterior a la fecha de inicio.");
             return "redirect:/proyectos";

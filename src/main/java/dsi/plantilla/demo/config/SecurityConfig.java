@@ -35,7 +35,9 @@ public class SecurityConfig {
                 .requestMatchers("/trabajadores/**").hasRole("SUPERVISOR")
                 .requestMatchers("/asistencias/**").hasAnyRole("SUPERVISOR", "CONTADORA", "JEFE")
                 .requestMatchers("/planillas/**").hasRole("CONTADORA")
+                .requestMatchers("/facturacion/**").hasRole("CONTADORA") // <-- NUEVA LÍNEA
                 
+
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form
