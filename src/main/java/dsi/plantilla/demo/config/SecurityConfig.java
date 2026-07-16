@@ -25,14 +25,13 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/css/**", "/js/**", "/img/**", "/webjars/**").permitAll()
+                // AÑADIMOS "/uploads/**" PARA PERMITIR VER LAS FOTOS Y PDFs
+                .requestMatchers("/", "/css/**", "/js/**", "/img/**", "/webjars/**", "/uploads/**").permitAll()
                 .requestMatchers("/dashboard").authenticated()
                 
-                // RUTAS DE IT / ADMIN
                 .requestMatchers("/usuarios/**").hasRole("ADMINISTRADOR")
                 .requestMatchers("/clientes/**").hasAnyRole("ADMINISTRADOR", "JEFE")
                 
-                // RUTAS OPERATIVAS (SIN ADMIN)
                 .requestMatchers("/trabajadores/**").hasRole("SUPERVISOR")
                 .requestMatchers("/asistencias/**").hasAnyRole("SUPERVISOR", "CONTADORA", "JEFE")
                 .requestMatchers("/planillas/**").hasRole("CONTADORA")

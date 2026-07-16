@@ -13,14 +13,22 @@
             <div class="row">
                 <div class="col-lg-3">
                     <div class="card text-center p-4 mb-4 shadow-sm border-0">
-                        <div class="mb-3"><div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;"><i class="bi bi-person-vcard text-primary fs-1"></i></div></div>
+                        <div class="mx-auto mb-3" style="width: 80px; height: 80px; border-radius: 50%; overflow: hidden; border: 3px solid #e2e8f0;">
+                            <img th:if="${trabajador.foto != null}" th:src="@{'/uploads/' + ${trabajador.foto}}" style="width: 100%; height: 100%; object-fit: cover;">
+                            <div th:unless="${trabajador.foto != null}" class="bg-light d-flex align-items-center justify-content-center h-100 w-100">
+                                <i class="bi bi-person-fill text-secondary fs-1"></i>
+                            </div>
+                        </div>
                         <h5 class="fw-bold text-dark mb-1" th:text="${trabajador.nombre}"></h5>
                         <p class="text-primary small fw-bold text-uppercase" th:text="${trabajador.puesto != null ? trabajador.puesto.nombre : 'SIN CARGO ASIGNADO'}"></p>
                         <div class="bg-light p-2 rounded-3 mb-4 small fw-bold">DUI: <span th:text="${trabajador.dui}"></span></div>
+                        
                         <div class="text-start">
                             <div class="stat-box bg-primary text-white shadow-sm mb-2"><small class="opacity-75">Horas Base</small><h4 class="mb-0 fw-bold" th:text="${totalBaseGlobal}"></h4></div>
                             <div class="stat-box bg-success text-white shadow-sm mb-2"><small class="opacity-75">Diurnas</small><h4 class="mb-0 fw-bold" th:text="${totalDiurnaGlobal}"></h4></div>
-                            <div class="stat-box bg-dark text-white shadow-sm"><small class="opacity-75">Nocturnas</small><h4 class="mb-0 fw-bold" th:text="${totalNocturnaGlobal}"></h4></div>
+                            <div class="stat-box bg-dark text-white shadow-sm mb-2"><small class="opacity-75">Nocturnas</small><h4 class="mb-0 fw-bold" th:text="${totalNocturnaGlobal}"></h4></div>
+                            <!-- NUEVA CAJA DE BONOS -->
+                            <div class="stat-box bg-info text-dark shadow-sm"><small class="opacity-75">Bonos Recibidos</small><h4 class="mb-0 fw-bold" th:text="'$' + ${totalBonosGlobal}"></h4></div>
                         </div>
                     </div>
                 </div>
@@ -40,13 +48,10 @@
                                         
                                         <td class="text-end pe-4">
                                             <div class="btn-group shadow-sm" th:if="${h.estado == 'PENDIENTE'}">
-                                                <!-- SOLO EL JEFE APRUEBA -->
                                                 <button sec:authorize="hasRole('JEFE')" class="btn btn-sm btn-dark px-3 rounded-pill me-1" data-bs-toggle="modal" th:data-bs-target="'#modalRevision' + ${h.id}">Validar</button>
-                                                <!-- SOLO EL SUPERVISOR AÑADE EXTRAS -->
                                                 <button sec:authorize="hasRole('SUPERVISOR')" class="btn btn-sm btn-outline-success rounded-pill px-3" data-bs-toggle="modal" th:data-bs-target="'#modalExtra' + ${h.id}">+ Extra</button>
                                             </div>
 
-                                            <!-- Modales ocultos a la Contadora por completo -->
                                             <div sec:authorize="hasRole('JEFE')" class="modal fade text-start" th:id="'modalRevision' + ${h.id}" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow"><form th:action="@{/asistencias/revisar}" method="post"><input type="hidden" name="id" th:value="${h.id}"><div class="modal-header bg-dark text-white border-0"><h5 class="modal-title fw-bold">Validar Registro</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body p-4"><div class="mb-3"><label class="form-label fw-bold">Observaciones</label><textarea name="observaciones" class="form-control" rows="2"></textarea></div><div class="d-grid gap-2"><button type="submit" name="accion" value="APROBAR" class="btn btn-success fw-bold">Aprobar</button><button type="submit" name="accion" value="RECHAZAR" class="btn btn-outline-danger fw-bold">Rechazar</button></div></div></form></div></div></div>
                                             <div sec:authorize="hasRole('SUPERVISOR')" class="modal fade text-start" th:id="'modalExtra' + ${h.id}" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow-lg"><form th:action="@{/asistencias/horas-extra/guardar}" method="post"><input type="hidden" name="asistencia.id" th:value="${h.id}"><div class="modal-header bg-success text-white border-0"><h5 class="modal-title fw-bold">Nueva Hora Extra</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body p-4"><div class="mb-3"><label class="form-label fw-bold">Cantidad</label><input type="number" step="0.5" name="cantidad" class="form-control" required></div><div class="mb-3"><label class="form-label fw-bold">Tipo</label><select name="tipo" class="form-select"><option value="DIURNA">Diurna</option><option value="NOCTURNA">Nocturna</option></select></div><div class="mb-1"><label class="form-label fw-bold">Motivo</label><textarea name="motivo" class="form-control" rows="2" required></textarea></div></div><div class="modal-footer border-0 bg-light"><button type="submit" class="btn btn-success w-100 rounded-pill fw-bold">Guardar</button></div></form></div></div></div>
                                         </td>

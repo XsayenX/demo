@@ -19,7 +19,7 @@ import java.util.Optional;
 
 @Controller
 @RequestMapping("/planillas")
-@PreAuthorize("hasRole('CONTADORA')") // SOLO CONTADORA ENTRA AQUÍ
+@PreAuthorize("hasRole('CONTADORA')") 
 public class PlanillaController {
 
     @Autowired private PlanillaService planillaService;
@@ -47,8 +47,12 @@ public class PlanillaController {
         model.addAttribute("resumen", resumen);
         model.addAttribute("fInicio", inicio);
         model.addAttribute("fFin", fin);
+        
+        // SUMATORIAS GLOBALES PARA EL PIE DE LA TABLA
         model.addAttribute("totalNomina", resumen.stream().mapToDouble(PlanillaResumenDTO::getSalarioNeto).sum());
         model.addAttribute("totalDeducciones", resumen.stream().mapToDouble(PlanillaResumenDTO::getDeducciones).sum());
+        model.addAttribute("totalBonos", resumen.stream().mapToDouble(PlanillaResumenDTO::getBonos).sum()); // <-- NUEVO
+        
         return "planillas/resultado";
     }
 

@@ -9,7 +9,15 @@
             <form th:action="@{/asistencias/guardar-masivo}" th:object="${dto}" method="post">
                 <div class="card border-0 shadow-sm overflow-hidden">
                     <div class="card-header bg-dark text-white py-3 px-4 d-flex justify-content-between align-items-center">
-                        <span class="fw-bold"><i class="bi bi-people me-2"></i>Control de Personal</span>
+                        <div>
+                            <span class="fw-bold"><i class="bi bi-people me-2"></i>Control de Personal</span>
+                            
+                            <!-- NUEVO BOTÓN DE AUTO-RELLENO -->
+                            <button type="button" id="btnAutofill" class="btn btn-sm btn-outline-light ms-3 rounded-pill px-3 shadow-sm" title="Copia el último horario de cada trabajador">
+                                <i class="bi bi-lightning-charge-fill text-warning"></i> Auto Rellenar
+                            </button>
+                        </div>
+                        
                         <span class="badge bg-primary px-3 rounded-pill" th:text="${#temporals.format(fecha, 'EEEE dd MMMM')}"></span>
                     </div>
                     <div class="card-body p-0">
@@ -24,7 +32,13 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr th:each="row, stat : *{registros}" th:classappend="${row.id != null ? 'bg-light' : ''}">
+                                <!-- NUEVO: Inyectamos los datos del último registro como atributos HTML (data-last-in) -->
+                                <tr th:each="row, stat : *{registros}" 
+                                    th:classappend="${row.id != null ? 'bg-light' : ''}"
+                                    th:with="ultimo=${ultimos.get(row.trabajador.id)}"
+                                    th:data-last-in="${ultimo != null and ultimo.horaEntrada != null ? ultimo.horaEntrada : '07:00'}"
+                                    th:data-last-out="${ultimo != null and ultimo.horaSalida != null ? ultimo.horaSalida : '17:00'}"
+                                    class="fila-asistencia">
                                     <td class="ps-4">
                                         <span th:if="${row.id != null}" class="badge bg-success-subtle text-success border border-success rounded-pill px-3">
                                             <i class="bi bi-check-circle-fill"></i> Registrado
@@ -34,7 +48,6 @@
                                         </span>
                                     </td>
                                     <td>
-                                        <!-- CORRECCIÓN CLAVE: Campo oculto para el ID de la asistencia -->
                                         <input type="hidden" th:field="*{registros[__${stat.index}__].id}">
                                         <input type="hidden" th:field="*{registros[__${stat.index}__].trabajador.id}">
                                         <input type="hidden" th:field="*{registros[__${stat.index}__].fecha}">
@@ -70,6 +83,25 @@
             </form>
         </main>
     </div>
+    
     <script th:replace="~{fragments/layout :: script}"></script>
+    
+    <!-- SCRIPT DE AUTO-RELLENO -->
+    <script>
+        document.getElementById('btnAutofill').addEventListener('click', function() {
+            document.querySelectorAll('.fila-asistencia').forEach(tr => {
+                const inInput = tr.querySelector('input[name$=".horaEntrada"]');
+                const outInput = tr.querySelector('input[name$=".horaSalida"]');
+                
+                // Solo rellenar si el input está vacío y NO está de solo lectura
+                if (inInput && !inInput.readOnly && !inInput.value) {
+                    inInput.value = tr.getAttribute('data-last-in');
+                }
+                if (outInput && !outInput.readOnly && !outInput.value) {
+                    outInput.value = tr.getAttribute('data-last-out');
+                }
+            });
+        });
+    </script>
 </body>
 </html>

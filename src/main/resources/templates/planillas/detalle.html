@@ -47,6 +47,7 @@
                                 <th class="text-center">Hrs Totales</th>
                                 <th class="text-end">Salario Base</th>
                                 <th class="text-end">Pago Extras</th>
+                                <th class="text-end text-info">Bonos</th>
                                 <th class="text-end text-danger">Deducciones</th>
                                 <th class="pe-4 text-end fs-6">Pagado</th>
                             </tr>
@@ -60,6 +61,7 @@
                                 <td class="text-center fw-semibold text-secondary" th:text="${#numbers.formatDecimal(d.horasBase + d.horasExtrasDiurnas + d.horasExtrasNocturnas, 1, 1)} + 'h'"></td>
                                 <td class="text-end" th:text="'$' + ${#numbers.formatDecimal(d.salarioBase, 1, 2)}"></td>
                                 <td class="text-end text-success fw-bold" th:text="'+$' + ${#numbers.formatDecimal(d.montoExtras, 1, 2)}"></td>
+                                <td class="text-end text-info fw-bold" th:text="'+$' + ${#numbers.formatDecimal(d.bonos != null ? d.bonos : 0.0, 1, 2)}"></td>
                                 <td class="text-end text-danger fw-bold" th:text="'-$' + ${#numbers.formatDecimal(d.deducciones, 1, 2)}"></td>
                                 <td class="pe-4 text-end fw-bold text-primary fs-6">
                                     <span th:text="'$' + ${#numbers.formatDecimal(d.salarioNeto, 1, 2)}"></span>
@@ -69,7 +71,7 @@
                         <tfoot class="table-light border-top">
                             <tr>
                                 <td colspan="4" class="text-end fw-bold text-uppercase py-3">TOTAL PAGADO (NETO):</td>
-                                <!-- Calculamos total deducciones sumando la lista -->
+                                <td class="text-end text-info fw-bold py-3" th:text="'+$' + ${#numbers.formatDecimal(#aggregates.sum(planilla.detalles.![bonos != null ? bonos : 0.0]), 1, 2)}"></td>
                                 <td class="text-end text-danger fw-bold py-3" th:text="'Impuestos: $' + ${#numbers.formatDecimal(#aggregates.sum(planilla.detalles.![deducciones]), 1, 2)}"></td>
                                 <td class="text-end pe-4 fw-bold text-dark fs-5 py-3" th:text="'$' + ${#numbers.formatDecimal(planilla.totalPagar, 1, 2)}"></td>
                             </tr>

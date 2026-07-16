@@ -24,7 +24,6 @@
                 <div class="btn-print d-flex gap-2">
                     <button onclick="window.print()" class="btn btn-outline-dark rounded-pill px-4 shadow-sm"><i class="bi bi-printer me-2"></i>Imprimir / PDF</button>
                     
-                    <!-- BOTÓN QUE GUARDA TODO EN BASE DE DATOS -->
                     <form th:action="@{/planillas/guardar}" method="post" th:if="${not #lists.isEmpty(resumen)}">
                         <input type="hidden" name="inicio" th:value="${fInicio}">
                         <input type="hidden" name="fin" th:value="${fFin}">
@@ -44,6 +43,7 @@
                                 <th class="text-center">Hrs Totales</th>
                                 <th class="text-end">Salario Base</th>
                                 <th class="text-end">Pago Extras</th>
+                                <th class="text-end text-info">Bonos</th>
                                 <th class="text-end text-danger">Deducciones</th>
                                 <th class="pe-4 text-end fs-6">A Recibir</th>
                             </tr>
@@ -57,13 +57,14 @@
                                 <td class="text-center fw-semibold text-secondary" th:text="${#numbers.formatDecimal(r.horasBase + r.horasExtrasDiurnas + r.horasExtrasNocturnas, 1, 1)} + 'h'"></td>
                                 <td class="text-end" th:text="'$' + ${#numbers.formatDecimal(r.salarioBase, 1, 2)}"></td>
                                 <td class="text-end text-success fw-bold" th:text="'+$' + ${#numbers.formatDecimal(r.montoExtras, 1, 2)}"></td>
+                                <td class="text-end text-info fw-bold" th:text="'+$' + ${#numbers.formatDecimal(r.bonos != null ? r.bonos : 0.0, 1, 2)}"></td>
                                 <td class="text-end text-danger fw-bold" th:text="'-$' + ${#numbers.formatDecimal(r.deducciones, 1, 2)}"></td>
                                 <td class="pe-4 text-end fw-bold text-primary fs-6">
                                     <span th:text="'$' + ${#numbers.formatDecimal(r.salarioNeto, 1, 2)}"></span>
                                 </td>
                             </tr>
                             <tr th:if="${#lists.isEmpty(resumen)}">
-                                <td colspan="6" class="text-center py-5 text-muted">
+                                <td colspan="7" class="text-center py-5 text-muted">
                                     <i class="bi bi-folder-x display-4 d-block mb-3 opacity-50"></i>
                                     No hay jornadas registradas en este período.
                                 </td>
@@ -72,6 +73,7 @@
                         <tfoot class="table-light border-top" th:unless="${#lists.isEmpty(resumen)}">
                             <tr>
                                 <td colspan="4" class="text-end fw-bold text-uppercase py-3">TOTAL NÓMINA A PAGAR (NETO):</td>
+                                <td class="text-end text-info fw-bold py-3" th:text="'+$' + ${#numbers.formatDecimal(totalBonos, 1, 2)}"></td>
                                 <td class="text-end text-danger fw-bold py-3" th:text="'Impuestos: $' + ${#numbers.formatDecimal(totalDeducciones, 1, 2)}"></td>
                                 <td class="text-end pe-4 fw-bold text-dark fs-5 py-3" th:text="'$' + ${#numbers.formatDecimal(totalNomina, 1, 2)}"></td>
                             </tr>

@@ -35,5 +35,15 @@ public class Trabajador {
     @JoinColumn(name = "puesto_id")
     private Puesto puesto;
 
-    private boolean activo = true; // El getter será isActivo()
+    private boolean activo = true;
+
+    // --- NUEVOS CAMPOS (HU Mejorada) ---
+    private String telefono;
+    private String direccion;
+    private String contactoEmergencia;
+    
+    // Archivos
+    private String foto;
+    private String documentoDui;
+    private String documentoCv;
 }

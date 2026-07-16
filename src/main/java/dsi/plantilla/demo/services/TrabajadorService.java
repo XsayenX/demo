@@ -33,6 +33,17 @@ public class TrabajadorService {
             exist.setPuesto(trabajador.getPuesto());
             exist.setActivo(trabajador.isActivo());
             exist.setFechaIngreso(trabajador.getFechaIngreso());
+            
+            // Nuevos campos de contacto
+            exist.setTelefono(trabajador.getTelefono());
+            exist.setDireccion(trabajador.getDireccion());
+            exist.setContactoEmergencia(trabajador.getContactoEmergencia());
+
+            // Conservar archivos si no se subió uno nuevo
+            if (trabajador.getFoto() != null) exist.setFoto(trabajador.getFoto());
+            if (trabajador.getDocumentoDui() != null) exist.setDocumentoDui(trabajador.getDocumentoDui());
+            if (trabajador.getDocumentoCv() != null) exist.setDocumentoCv(trabajador.getDocumentoCv());
+            
             return trabajadorRepository.save(exist);
         }
         return trabajadorRepository.save(trabajador);

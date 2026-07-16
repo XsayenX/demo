@@ -25,6 +25,7 @@ public class DetallePlanilla {
 
     private Double salarioBase;
     private Double montoExtras;
-    private Double deducciones; // ISSS (3%) + AFP (7.25%)
+    private Double bonos; // <-- NUEVO
+    private Double deducciones; 
     private Double salarioNeto;
 }

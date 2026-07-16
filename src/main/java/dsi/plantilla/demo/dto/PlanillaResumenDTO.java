@@ -12,9 +12,9 @@ public class PlanillaResumenDTO {
     private Double horasExtrasDiurnas;
     private Double horasExtrasNocturnas;
     
-    // Agregamos los campos monetarios
     private Double salarioBase;
     private Double montoExtras;
+    private Double bonos; // <-- NUEVO: Bonos ganados en el período
     private Double deducciones;
     private Double salarioNeto;
 }

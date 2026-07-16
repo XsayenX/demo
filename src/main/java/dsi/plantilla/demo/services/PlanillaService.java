@@ -2,10 +2,12 @@ package dsi.plantilla.demo.services;
 
 import dsi.plantilla.demo.dto.PlanillaResumenDTO;
 import dsi.plantilla.demo.models.Asistencia;
+import dsi.plantilla.demo.models.Bono;
 import dsi.plantilla.demo.models.DetallePlanilla;
 import dsi.plantilla.demo.models.Planilla;
 import dsi.plantilla.demo.models.Trabajador;
 import dsi.plantilla.demo.repositories.AsistenciaRepository;
+import dsi.plantilla.demo.repositories.BonoRepository;
 import dsi.plantilla.demo.repositories.PlanillaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -24,8 +26,8 @@ public class PlanillaService {
 
     @Autowired private AsistenciaRepository asistenciaRepository;
     @Autowired private PlanillaRepository planillaRepository;
+    @Autowired private BonoRepository bonoRepository; // <-- INYECTADO
 
-    // ISSS (3%) + AFP (7.25%) = 10.25% de descuento
     private static final double TASA_DESCUENTOS = 0.1025;
 
     public List<PlanillaResumenDTO> simularPlanilla(LocalDate inicio, LocalDate fin) {
@@ -43,18 +45,22 @@ public class PlanillaService {
             double hDiurnas = lista.stream().mapToDouble(Asistencia::getHorasDiurnasTotales).sum();
             double hNocturnas = lista.stream().mapToDouble(Asistencia::getHorasNocturnasTotales).sum();
 
-            // Obtenemos la tarifa, si no tiene, asumimos 0 para no romper el sistema
             double tarifaHora = (t.getPuesto().getSalarioPorHora() != null) ? t.getPuesto().getSalarioPorHora() : 0.0;
             
             double salarioBase = hBase * tarifaHora;
-            double pagoDiurnas = hDiurnas * (tarifaHora * 2.0); // La extra se paga doble
-            double pagoNocturnas = hNocturnas * (tarifaHora * 2.5); // Doble + recargo nocturno
+            double pagoDiurnas = hDiurnas * (tarifaHora * 2.0); 
+            double pagoNocturnas = hNocturnas * (tarifaHora * 2.5); 
             double totalExtras = pagoDiurnas + pagoNocturnas;
 
-            double deducciones = (salarioBase + totalExtras) * TASA_DESCUENTOS;
-            double neto = (salarioBase + totalExtras) - deducciones;
+            // BÚSQUEDA Y CÁLCULO DE BONOS
+            List<Bono> bonosDelPeriodo = bonoRepository.findByTrabajadorAndFechaBetween(t, inicio, fin);
+            double totalBonos = bonosDelPeriodo.stream().mapToDouble(Bono::getMonto).sum();
 
-            resumen.add(new PlanillaResumenDTO(t, hBase, hDiurnas, hNocturnas, salarioBase, totalExtras, deducciones, neto));
+            // Los bonos normalmente no aplican a descuentos de ley, se suman directo al neto
+            double deducciones = (salarioBase + totalExtras) * TASA_DESCUENTOS;
+            double neto = (salarioBase + totalExtras + totalBonos) - deducciones;
+
+            resumen.add(new PlanillaResumenDTO(t, hBase, hDiurnas, hNocturnas, salarioBase, totalExtras, totalBonos, deducciones, neto));
         });
 
         resumen.sort(Comparator.comparing(r -> r.getTrabajador().getNombre()));
@@ -81,6 +87,7 @@ public class PlanillaService {
             d.setHorasExtrasNocturnas(r.getHorasExtrasNocturnas());
             d.setSalarioBase(r.getSalarioBase());
             d.setMontoExtras(r.getMontoExtras());
+            d.setBonos(r.getBonos()); // GUARDA EL BONO EN LA BD
             d.setDeducciones(r.getDeducciones());
             d.setSalarioNeto(r.getSalarioNeto());
             return d;
