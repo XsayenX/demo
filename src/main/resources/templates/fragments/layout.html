@@ -54,6 +54,8 @@
                 <div sec:authorize="hasAnyRole('ADMINISTRADOR','JEFE')"><a class="nav-link" th:classappend="${activePage == 'clientes' ? 'active' : ''}" href="/clientes"><i class="bi bi-person-vcard"></i> <span class="nav-text">Clientes</span></a></div>
 
                 <div sec:authorize="hasAnyRole('ADMINISTRADOR','JEFE')"><a class="nav-link" th:classappend="${activePage == 'proyectos' ? 'active' : ''}" href="/proyectos"><i class="bi bi-buildings"></i> <span class="nav-text">Proyectos</span></a></div>
+
+                <div sec:authorize="hasAnyRole('ADMINISTRADOR','JEFE')"><a class="nav-link" th:classappend="${activePage == 'cotizaciones' ? 'active' : ''}" href="/cotizaciones"><i class="bi bi-file-earmark-text"></i> <span class="nav-text">Cotizaciones</span></a></div>
                 
                 <!-- Solo Supervisor -->
                 <div sec:authorize="hasRole('SUPERVISOR')"><a class="nav-link" th:classappend="${activePage == 'trabajadores' ? 'active' : ''}" href="/trabajadores"><i class="bi bi-people"></i> <span class="nav-text">Trabajadores</span></a></div>
