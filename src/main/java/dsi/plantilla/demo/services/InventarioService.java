@@ -43,21 +43,26 @@ public class InventarioService {
         return herramientaRepository.save(h);
     }
 
-    // HU-25: Lógica para actualizar stock según movimientos
     @Transactional
     public void registrarMovimiento(MovimientoInventario mov) throws Exception {
         Herramienta h = herramientaRepository.findById(mov.getHerramienta().getId()).orElseThrow(() -> new Exception("Herramienta no encontrada"));
         
         if ("ASIGNACION".equals(mov.getTipo())) {
             if (h.getStock() < mov.getCantidad()) {
-                throw new Exception("STOCK_INSUFICIENTE"); // Evita valores negativos (HU-25 Tarea 3)
+                throw new Exception("STOCK_INSUFICIENTE"); 
             }
             h.setStock(h.getStock() - mov.getCantidad());
         } else if ("DEVOLUCION".equals(mov.getTipo())) {
             h.setStock(h.getStock() + mov.getCantidad());
         }
         
-        herramientaRepository.save(h); // Actualiza la tabla principal
-        movimientoRepository.save(mov); // Guarda el registro histórico
+        herramientaRepository.save(h); 
+        movimientoRepository.save(mov); 
+    }
+
+    // NUEVO
+    @Transactional(readOnly = true)
+    public List<MovimientoInventario> listarMovimientosPorProyecto(Long id) {
+        return movimientoRepository.findByProyectoIdOrderByFechaDesc(id);
     }
 }

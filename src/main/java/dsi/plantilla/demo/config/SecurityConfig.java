@@ -24,32 +24,28 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+            // NUEVO: Instruye al navegador a NO guardar la página en caché.
+            // Si el usuario da "Atrás" en su navegador web, la página expirará y lo mandará al Login.
+            .headers(headers -> headers
+                .cacheControl(cache -> cache.disable())
+            )
             .authorizeHttpRequests(auth -> auth
-                // 1. Rutas Públicas (Sin login)
                 .requestMatchers("/", "/css/**", "/js/**", "/img/**", "/webjars/**", "/uploads/**").permitAll()
-                
-                // 2. Dashboad y Rutas Básicas (Con login)
                 .requestMatchers("/dashboard").authenticated()
                 
-                // 3. RUTAS RESTRINGIDAS POR ROLES (RBAC)
                 .requestMatchers("/usuarios/**").hasRole("ADMINISTRADOR")
                 .requestMatchers("/clientes/**").hasAnyRole("ADMINISTRADOR", "JEFE")
                 .requestMatchers("/proyectos/**").hasAnyRole("ADMINISTRADOR", "JEFE")
                 .requestMatchers("/cotizaciones/**").hasAnyRole("ADMINISTRADOR", "JEFE")
+                .requestMatchers("/inventario/**").hasAnyRole("ADMINISTRADOR", "JEFE", "SUPERVISOR")
                 
                 .requestMatchers("/trabajadores/**").hasRole("SUPERVISOR")
                 .requestMatchers("/asistencias/**").hasAnyRole("SUPERVISOR", "CONTADORA", "JEFE")
-                
-                .requestMatchers("/planillas/**").hasRole("CONTADORA")
-                .requestMatchers("/facturacion/**").hasRole("CONTADORA")
-                
-                // RUTAS DE GASTOS Y FACTURAS (Para la Epic 7 que vimos antes)
                 .requestMatchers("/facturas/**").hasAnyRole("ADMINISTRADOR", "SUPERVISOR", "CONTADORA", "JEFE")
                 
-                // INVENTARIO (Epic 8) <-- Añadir esto
-                .requestMatchers("/inventario/**").hasAnyRole("ADMINISTRADOR", "JEFE", "SUPERVISOR")
-
-                // 4. CUALQUIER OTRA RUTA: Obligar Login (ESTO SOLO SE PONE 1 VEZ AL FINAL)
+                .requestMatchers("/planillas/**").hasRole("CONTADORA")
+                .requestMatchers("/facturacion/**").hasRole("CONTADORA") 
+                
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form
@@ -59,6 +55,9 @@ public class SecurityConfig {
             )
             .logout(logout -> logout
                 .logoutSuccessUrl("/login?logout")
+                // Invalida la sesión actual para evitar usar la flecha hacia atrás
+                .invalidateHttpSession(true)
+                .clearAuthentication(true)
                 .deleteCookies("JSESSIONID")
                 .permitAll()
             )

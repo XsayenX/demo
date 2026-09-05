@@ -30,4 +30,10 @@ public class FacturaService {
     public Double calcularGastoAcumulado(Long proyectoId) {
         return facturaRepository.sumarGastosPorProyecto(proyectoId);
     }
+
+    // NUEVO
+    @Transactional(readOnly = true)
+    public List<Factura> listarPorProyecto(Long id) {
+        return facturaRepository.findByProyectoIdOrderByFechaDesc(id);
+    }
 }
